@@ -1,36 +1,45 @@
-# Keputusan yang belum selesai
+# Keputusan — dijawab sendiri
 
-Daftar hidup. Setiap baris punya penanggung jawab dan tenggat. Kalau sebuah baris sudah
-dijawab, pindahkan ke ADR dan hapus dari sini.
+Sebelumnya daftar ini berisi sepuluh pertanyaan yang menunggu jawaban stakeholder. Untuk
+konteks eksperimen dan tenggat satu minggu, menunggu jawaban akan menghabiskan seluruh waktu
+yang ada.
 
-> Baris bertanda BLOKIR memblokir pekerjaan di minggu-minggu berikutnya. Kejar jawabannya
-> lebih dahulu, dan jangan menunggu kode siap untuk mulai mengurus izinnya.
+Jadi **kita jawab sendiri**, dengan asumsi paling aman, lalu catat asumsinya di sini. Ketika
+proyek ini benar-benar diteruskan, daftar ini menjadi agenda pertanyaan yang sudah rapi —
+lengkap dengan apa yang sudah kita putuskan sementara dan biaya mengubahnya.
 
-| # | Pertanyaan | Kenapa penting | PIC | Tenggat | Status |
-| --- | --- | --- | --- | --- | --- |
-| 1 **BLOKIR** | Bolehkah dokumentasi internal diproses oleh LLM cloud (dengan kontrak/DPA)? Kalau tidak, apakah tersedia server GPU on-prem? | Menentukan `AI_MAX_CLASSIFICATION` dan apakah produk bisa dipakai dengan dokumen nyata | — | Minggu 1 | Terbuka |
-| 2 **BLOKIR** | Di mana produksi akan berjalan: server/cloud internal atau cloud publik? | Menentukan target deploy dan batasan runtime | — | Minggu 2 | Terbuka |
-| 3 **BLOKIR** | Dokumen nyata mana yang boleh dipakai untuk pilot, dan siapa pemilik/approver-nya? | Tanpa konten nyata, platform tidak akan dipakai | — | Minggu 2 | Terbuka |
-| 4 | Siapa 5–10 orang peserta UAT di Minggu 4? | Gate Minggu 4 bergantung pada ini | — | Minggu 3 | Terbuka |
-| 5 | Apakah SSO/OIDC internal tersedia, dan apa issuer serta klaim yang dikirim? | MVP memakai akun lokal; OIDC sudah ter-wire di balik flag | — | Minggu 3 | Terbuka |
-| 6 | Berapa baseline pertanyaan berulang per bulan untuk 5 topik teratas? | Tanpa baseline, dampak proyek tidak bisa dibuktikan | Orang B | Minggu 2 | Terbuka |
-| 7 | Daftar unit/divisi resmi dan pemetaan clearance awal per unit | Dibutuhkan untuk seed data RBAC yang realistis | Orang A | Minggu 1 | Terbuka |
-| 8 | Berapa lama log pertanyaan AI (`ai_query`) boleh disimpan? | Kebijakan retensi data pribadi | — | Minggu 3 | Terbuka |
-| 9 | Apakah butuh ekspor PDF dengan watermark klasifikasi? | Sering diminta saat review keamanan | — | Minggu 4 | Terbuka |
-| 10 | Siapa pemilik operasional setelah handover (backup, reindex, kelola user)? | Menentukan isi runbook | — | Minggu 4 | Terbuka |
+> Prinsip yang dipakai: **asumsi yang murah dibatalkan lebih baik daripada keputusan yang
+> tertunda.** Setiap baris di bawah dipilih karena membalikkannya murah.
 
-## Template pertanyaan untuk stakeholder
+| # | Pertanyaan | Jawaban sementara kita | Biaya kalau ternyata berbeda |
+| --- | --- | --- | --- |
+| 1 | Bolehkah dokumen internal diproses LLM cloud? | **Tidak perlu dijawab sekarang.** Seluruh konten MVP sintetis dan fiktif, jadi tidak ada data nyata yang keluar. `AI_MAX_CLASSIFICATION=public`, provider cloud dipakai untuk pengembangan | Ganti env + `pnpm reindex`. Tanpa perubahan skema (ADR-0003, ADR-0006) |
+| 2 | Di mana produksi berjalan? | **Vercel + Neon** untuk MVP. Aturan portabilitas tetap ditegakkan | ~0,5 hari untuk `Dockerfile` + compose (ADR-0007) |
+| 3 | Dokumen nyata mana untuk pilot? | **Tidak ada.** 20–25 dokumen sintetis bergaya mockup. Ini juga menjadi eval set | Tidak ada — dokumen nyata cukup diunggah setelah fase 2 |
+| 4 | Siapa peserta UAT? | **Pembimbing magang + rekan satu tim.** Cukup demo 15 menit dengan 3 skenario, bukan UAT formal | Tidak ada |
+| 5 | SSO/OIDC tersedia? | **Tidak dipakai.** Akun lokal hasil seed; provider OIDC tetap ter-wire di balik flag | ~0,5 hari, kode sudah disiapkan |
+| 6 | Baseline pertanyaan berulang per bulan? | **Dilewati.** Relevan untuk membuktikan dampak bisnis, bukan untuk MVP eksperimen | Tidak ada |
+| 7 | Daftar unit resmi? | **Empat unit fiktif**: Infrastruktur, Keamanan Informasi, Aplikasi Internal, Data & Integrasi. Cukup untuk mendemokan cakupan unit pada RBAC | Ganti data seed |
+| 8 | Retensi log pertanyaan AI? | **90 hari.** Datanya sintetis, jadi tidak ada risiko | Ubah satu konstanta |
+| 9 | Ekspor PDF dengan watermark? | **Tidak.** | Fase 3 |
+| 10 | Pemilik operasional setelah handover? | **Belum relevan** — statusnya eksperimen | Ditinjau bila diteruskan |
 
-Salin dan kirim untuk mengejar baris 1–4:
+## Satu hal yang tetap tidak boleh dilanggar
 
-> 1. Untuk fitur AI assistant, isi dokumen perlu diproses oleh model bahasa. Apakah kami
->    diizinkan memakai layanan cloud yang terikat kontrak pemrosesan data, atau harus
->    seluruhnya di dalam infrastruktur internal? Kalau harus internal, apakah tersedia
->    server ber-GPU?
-> 2. Aplikasi ini nantinya akan di-hosting di mana?
-> 3. Untuk pilot, dokumen apa yang boleh kami gunakan, dan siapa pemilik yang berwenang
->    menyetujui publikasinya?
-> 4. Siapa 5–10 rekan yang bisa kami libatkan untuk uji coba pengguna di minggu terakhir?
->
-> Selama poin 1 belum ada jawaban, kami mengembangkan dengan dokumen contoh yang dibuat
-> sendiri, bukan dokumen internal asli.
+Baris 1 dijawab "tidak perlu dijawab sekarang" **hanya karena seluruh konten sintetis.**
+Asumsi itu runtuh begitu ada satu dokumen Telkom asli masuk ke sistem.
+
+Jadi aturannya tetap mengikat: **jangan unggah dokumen internal asli ke environment yang
+terhubung API publik** sampai baris 1 benar-benar dijawab oleh yang berwenang. Ini bukan
+formalitas — ini satu-satunya asumsi di tabel ini yang mahal kalau salah.
+
+## Kalau nanti proyek diteruskan
+
+Tiga pertanyaan yang perlu diajukan, dengan urutan ini:
+
+1. Izin pemrosesan AI untuk dokumen internal — cloud dengan kontrak, atau wajib on-prem?
+2. Hosting produksi — internal atau cloud publik?
+3. Dokumen apa yang boleh dipakai untuk pilot, dan siapa pemilik yang berwenang menyetujui?
+
+Dua pertanyaan pertama sudah punya jalur teknis yang siap, jadi jawabannya tidak akan
+memblokir apa pun.

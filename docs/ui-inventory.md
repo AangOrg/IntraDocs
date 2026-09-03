@@ -3,11 +3,13 @@
 Mockup `intradocs-mockup_1.html` adalah **spesifikasi visual**, bukan wireframe: taksonomi,
 klasifikasi, dan alur approval sudah dipikirkan di dalamnya. Jangan merancang ulang dari nol.
 
+Seluruh delapan screen sudah dibaca dan diverifikasi langsung dari file.
+
 ## Langkah pertama sebelum menulis komponen
 
 Mockup mendefinisikan design system lengkap sebagai CSS variable (`--blue-600`, `--ink`,
 `--muted`, `--line`, `--r`, `--sh-md`, dan lain-lain). **Ekstrak semuanya menjadi design token
-di `tailwind.config.ts` sebagai task T-002, sebelum komponen apa pun dibuat.**
+di `tailwind.config.ts` di hari 1, sebelum komponen apa pun dibuat.**
 
 Alasan: kalau token belum ada, setiap agent AI akan mengarang warna dan spacing sendiri di
 setiap file. Itu penyebab utama UI terlihat seperti hasil tempelan. Setelah token ada, aturan
@@ -18,54 +20,87 @@ perlu icon library.
 
 ## Peta screen
 
-"Terverifikasi" berarti isinya sudah dibaca langsung dari file mockup. Yang belum, tolong
-dikonfirmasi saat mengerjakan task terkait dan perbarui tabel ini.
+| # | Screen | URL di mockup | MVP? | Hari |
+| --- | --- | --- | --- | --- |
+| s1 | Help Center — hero search, 6 kartu kategori, paling dibaca, banner AI | `/help-center` | sebagian | 4 |
+| s2 | Hasil pencarian — filter, kotak jawaban AI + sitasi, kartu hasil | `/cari` | **ya** | 4–5 |
+| s3 | Katalog dokumen — tabel, filter chip, pagination | `/katalog` | **ya** | 2 |
+| s4 | Baca dokumen — nav dokumen hierarkis, isi, metadata | `/{kategori}/{slug}` | **ya** | 3 |
+| s5 | Unggah Knowledge — wizard 4 langkah | `/unggah` | disederhanakan | 3 |
+| s6 | Antrean approval admin | `/admin/approval` | tidak — fase 2 | — |
+| s7 | Kategori & Label + aturan otomatis | `/admin/kategori-label` | tidak — fase 2 | — |
+| s8 | Pengguna & RBAC + sinkron AD | `/admin/pengguna` | tidak — fase 2 | — |
 
-| # | Screen | Terverifikasi | Prioritas | Task | Pemilik |
-| --- | --- | --- | --- | --- | --- |
-| s1 | Help Center (hero search, kategori, paling dibaca, banner AI) | ya | P1 | T-007 | B |
-| s2 | Hasil pencarian (filter, kotak jawaban AI + sitasi, kartu hasil) | ya | P1 | T-011 | B |
-| s3 | (perlu dikonfirmasi — kemungkinan doc viewer) | belum | P1 | T-006 | B |
-| s4 | (perlu dikonfirmasi — kemungkinan AI chat penuh) | belum | P1 | T-013 | B |
-| s5 | Unggah Knowledge (wizard 4 langkah, metadata, klasifikasi) | ya | P1 | T-010 | B |
-| s6 | Konsol approval admin | ya | P2 | T-012 | B |
-| s7 | (perlu dikonfirmasi — kemungkinan admin user/RBAC) | belum | P2 | — | B |
-| s8 | (perlu dikonfirmasi — kemungkinan analytics) | belum | P3 / v1.1 | — | — |
+## Detail terverifikasi per screen
 
-## Detail yang sudah dikonfirmasi dari mockup
+**s1 Help Center.** Hero "Ada yang bisa kami bantu?", search besar + tombol Tanya AI
+(`⌘K`, `⌥I`), chip topik populer, 6 kartu kategori dengan jumlah dokumen, bagian "Paling
+banyak dibaca bulan ini", statistik hero, footer dengan penanda klasifikasi.
 
-**Kategori** (6): Infrastruktur & Jaringan, Keamanan Informasi, Aplikasi Internal,
-SOP & Proses Bisnis, Onboarding & SDM, Data & Integrasi.
+**s2 Hasil pencarian.** Filter: kategori, label, format berkas, terakhir diperbarui, status.
+Header hasil menyebut "pencarian semantik + kata kunci". Kotak `.ai-answer` dengan sitasi
+bernomor `[1][2][3]` + chip sumber + "Lanjutkan di chat". Kartu hasil dengan breadcrumb,
+snippet ber-`<mark>`, versi, pemilik, badge Terverifikasi. Catatan mockup menegaskan tiga
+hal: hybrid BM25 + vector, sitasi yang bisa diklik, dan **dokumen terbatas tetap terlihat
+judulnya tetapi isinya terkunci** dengan opsi ajukan permintaan akses.
 
-**Label**: Identity, Runbook, Helpdesk, SOP, Kritikal, Onboarding, Migrasi — bebas dan
-boleh lebih dari satu per dokumen.
+**s3 Katalog.** Tabel dengan kolom Dokumen / Kategori / Label / Versi / Pemilik / Diperbarui /
+Status. Baris menampilkan badge tipe berkas (PDF, MD, DOC, XLS, PPT, TXT), jumlah halaman,
+ukuran, jumlah dibaca. Baris "Menunggu Approval" diberi latar amber. Sidebar tiga bagian:
+Navigasi, Kontribusi, Kategori — dengan penghitung. Catatan mockup menyebut versioning
+dengan rollback.
 
-**Filter pada halaman pencarian**: kategori (dengan jumlah), label, format berkas,
-terakhir diperbarui, status.
+**s4 Baca dokumen.** Panel `.docnav` kiri berisi **daftar isi hierarkis bernomor**
+(Bagian 1 / 1.1 / 2.1 / 2.1.1), tombol "Tanya AI tentang halaman ini" di topbar, favorit,
+unduh, dan search dalam dokumen. Ini layar yang paling sering dilihat pengguna — kualitasnya
+menentukan persepsi produk.
 
-**Metadata dokumen**: judul, ringkasan, kategori, sub-kategori, label, klasifikasi keamanan,
-pemilik dokumen, periode tinjau ulang, reviewer/approver.
+**s5 Unggah.** Wizard 4 langkah: Unggah Berkas → Metadata & Klasifikasi → Pratinjau → Kirim
+untuk Approval. Dropzone maks 50 MB. Blok `.ai-extract` untuk metadata otomatis. Field:
+Judul, Ringkasan, Kategori, Sub-kategori, Label, **Klasifikasi Keamanan**, Pemilik Dokumen,
+**Periode Tinjau Ulang**, Reviewer/Approver.
 
-**Elemen kepercayaan**: badge Terverifikasi, nomor versi (`v3.1`), tanggal update, pemilik,
-badge "Terbatas — akses via permintaan", sitasi bernomor pada jawaban AI.
+**s7 Kategori & Label.** 42 kategori 3 tingkat, 68 label. Panel "Aturan Otomatis" yang
+menghubungkan taksonomi dengan kebijakan akses dan approval — ide bagus untuk fase 2. Saran
+perapian taksonomi berbasis AI (deteksi label mirip dan label mati).
 
-**Role yang muncul di mockup**: Contributor, Admin Knowledge, dan approver kedua
-(Manajer Infrastruktur) untuk dokumen berlabel Kritikal.
+**s8 Pengguna & RBAC.** Menyebut **6 role**: Super Admin, Admin Knowledge, Reviewer, dan tiga
+lainnya — ditambah **sinkronisasi otomatis dari Active Directory**. MVP memakai **4 role**
+(`viewer`, `contributor`, `reviewer`, `admin`) tanpa sinkron AD. Pemetaannya lurus: Super
+Admin dan Admin Knowledge digabung menjadi `admin`, Reviewer tetap, sisanya `contributor`
+dan `viewer`.
 
-## Komponen bersama yang perlu dibangun lebih dulu
+## Dua koreksi model terhadap mockup
+
+**1. Klasifikasi bukan status.** Screen s3 menampilkan "Terbatas" dan "Kedaluwarsa" di kolom
+Status, bersama "Draft", "Menunggu Approval", dan "Published". Di skema, ketiganya hal
+berbeda: `status` adalah siklus hidup (`draft`/`in_review`/`published`/`archived`),
+`classification` adalah kepekaan (`public`/`internal`/`restricted`/`secret`), dan
+"Kedaluwarsa" adalah **turunan** dari `updated_at` + `review_period_days`. Menggabungkan
+ketiganya menjadi satu kolom akan menimbulkan kondisi mustahil seperti dokumen yang
+"Terbatas" tetapi belum `published`. Tampilkan sebagai satu kolom gabungan di UI kalau mau —
+tetapi simpan sebagai tiga hal terpisah.
+
+**2. Satu kategori per dokumen, label bebas dan banyak.** Catatan mockup menyatakan ini
+eksplisit, dan ini keputusan yang benar. Pertahankan di skema: `document.category_id` sebagai
+foreign key tunggal, `document_label` sebagai relasi banyak-ke-banyak.
+
+## Komponen bersama yang dibangun lebih dulu
 
 `AppShell` (topbar + sidebar) · `SearchInput` · `Pill` / `Tag` · `ClassificationBadge` ·
-`Card` · `Steps` · `FileRow` · `EmptyState` · `ErrorState` · `PermissionDeniedState` ·
-`CitationChip` · `MarkdownViewer`.
+`StatusBadge` · `FileTypeBadge` · `Card` · `DataTable` · `DocNav` · `EmptyState` ·
+`ErrorState` · `PermissionDeniedState` · `CitationChip` · `MarkdownViewer`.
 
-Bangun ini di T-002/T-006 sebelum menyalin screen satu per satu. Menyalin screen tanpa
-komponen bersama menghasilkan duplikasi yang mahal untuk dirapikan.
+Bangun ini di hari 1–2 sebelum menyalin screen satu per satu. Menyalin screen tanpa komponen
+bersama menghasilkan duplikasi yang mahal untuk dirapikan.
 
-## Yang sengaja tidak ditiru dari mockup di v1.0
+## Yang sengaja tidak ditiru
 
-Angka statistik pada hero ("1.284 dokumen", "96% akurasi AI") adalah placeholder. Tampilkan
-angka nyata atau jangan tampilkan sama sekali. **Jangan pernah menampilkan angka akurasi AI
-yang tidak diukur oleh eval harness.**
+Angka statistik pada hero ("1.284 dokumen", "42 kategori", "318 pengguna", **"96% akurasi
+jawaban AI"**) adalah placeholder. Tampilkan angka nyata dari database, atau jangan tampilkan
+sama sekali. **Jangan pernah menampilkan angka akurasi AI yang tidak diukur oleh eval
+harness** — itu satu-satunya cara cepat menghancurkan kredibilitas produk yang justru
+dibangun untuk kredibel.
 
-Deteksi duplikasi, approval berjenjang, OCR, dan dukungan XLSX/PPTX/ZIP muncul di mockup
-tetapi merupakan non-goal v1.0. Lihat `docs/prd.md` bagian 5.
+Deteksi duplikasi, approval berjenjang, OCR, XLSX/PPTX/ZIP, auto-label AI, saran taksonomi,
+dan sinkron AD muncul di mockup tetapi bukan bagian MVP. Lihat `docs/scope-mvp.md`.

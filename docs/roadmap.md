@@ -1,84 +1,97 @@
-# Roadmap 4 minggu
+# Sprint 6 hari — MVP
 
-Aturan keras: **setiap akhir minggu harus ada yang ter-deploy dan bisa didemokan.**
-Bukan "hampir jadi".
+Target: MVP tercapai dan bisa diklik pada **Jumat, 11 September 2026**.
+Definisi "tercapai" ada di `docs/scope-mvp.md`. Yang dipotong dan alasannya ada di ADR-0007.
 
-## Minggu 0 — fondasi (2–3 hari, boleh tumpang tindih dengan Minggu 1)
+Aturan sprint:
 
-Kunci keputusan yang tersisa · repo hygiene + branch protection + CI · `docker-compose`
-(Postgres+pgvector, MinIO) · design token dari mockup · skema DB + migrasi awal ·
-seluruh artifak perancangan · **ajukan permintaan SSO dan persetujuan AI provider ke
-stakeholder hari ini**.
+1. **Setiap hari harus berakhir dengan sesuatu yang jalan**, walaupun kecil.
+2. **Kalau sebuah hari meleset, potong fitur — jangan geser tenggat.** Urutan potongnya ada
+   di bawah.
+3. Deploy ke Vercel sejak hari pertama. Jangan menunggu "nanti kalau sudah rapi".
 
-**Gate:** `docker compose up` lalu aplikasi kosong berjalan, CI hijau.
+## Hari 1 — Jumat 4 Sep · fondasi
 
-Task: T-001, T-002, T-003
+| | Orang A | Orang B |
+| --- | --- | --- |
+| Kerja | Scaffold Next.js + TS strict + Drizzle + Neon (pgvector) · skema 9 tabel + migrasi · seed 5 user, 6 kategori, 9 label | Design token dari CSS variable mockup → `tailwind.config.ts` · sprite ikon · `AppShell` (topbar + sidebar) · halaman `/dev/tokens` |
 
-## Minggu 1 — fondasi & konten
+**Sinkron pagi (30 menit, wajib):** sepakati skema dan `docs/api-contract.md` bersama.
+Setelah ini keduanya jalan paralel tanpa saling menunggu.
 
-Auth (akun lokal + invite, OIDC di balik flag) · 4 role + `visibleDocumentsFilter` +
-**test kebocoran** · CRUD dokumen Markdown · viewer (render + sanitize + metadata + versi) ·
-katalog + kategori/label · **seed 20–30 dokumen sintetis yang realistis**.
+**Akhir hari:** aplikasi kosong ter-deploy di Vercel, terhubung Neon, token terlihat di
+`/dev/tokens`.
 
-**Gate:** login sebagai tiga role berbeda dan melihat katalog yang berbeda sesuai izin.
+## Hari 2 — Senin 7 Sep · identitas & izin
 
-Task: T-004, T-005, T-006, T-007, T-008
+| | Orang A | Orang B |
+| --- | --- | --- |
+| Kerja | Auth.js credentials · `visibleDocumentsFilter` · `can.ts` · **`tests/rbac/` ditulis lebih dulu** | Halaman katalog (mockup s3): tabel, kolom, badge status, filter chip · sidebar kategori |
 
-## Minggu 2 — ingest & search
+**Akhir hari:** login sebagai tiga role, katalog menampilkan daftar yang berbeda, test RBAC hijau.
 
-Upload → object storage → job konversi → Markdown → editor pratinjau/perbaikan · metadata &
-klasifikasi · review satu tingkat → publish · **hybrid search + RRF** + filter · audit log ·
-**verifikasi bahwa jalur AI on-prem bisa berjalan** (walau lambat).
+Hari ini adalah hari terpenting di sprint. Kalau RBAC belum benar di sini, jangan lanjut ke
+hari 3 — semua yang dibangun di atasnya akan ikut salah.
 
-**Gate:** unggah satu PDF nyata → menjadi Markdown → diperiksa → dipublikasikan →
-ditemukan lewat search. Dan: uji "clone & run" oleh orang yang tidak menulis setup-nya.
+## Hari 3 — Selasa 8 Sep · konten
 
-Task: T-009, T-010, T-011, T-012
+| | Orang A | Orang B |
+| --- | --- | --- |
+| Kerja | Endpoint dokumen (CRUD + publish → `document_version` baru) · `audit_log` untuk akses `restricted` | Viewer dokumen (mockup s4): render server + sanitize, TOC hierarkis, panel metadata, badge klasifikasi · form buat/edit Markdown |
+| Paralel | — | **20–25 dokumen sintetis** — dicicil sepanjang hari |
 
-## Minggu 3 — AI Assistant
+**Akhir hari:** katalog terisi konten yang realistis, dokumen bisa dibaca dengan rapi.
 
-Job chunk + embed · endpoint RAG streaming dengan **filter izin di dalam query** · UI chat +
-sitasi yang bisa diklik ke bagian dokumen + badge klasifikasi/tanggal/verifikasi · jalur
-abstain · rate limit · **eval harness + tuning berbasis angka** · opsional: AI auto-fill
-metadata.
+## Hari 4 — Rabu 9 Sep · search
 
-**Gate:** hit@5 >= 0,8 pada eval set; test kebocoran RBAC lolos; 100% jawaban bersitasi.
+| | Orang A | Orang B |
+| --- | --- | --- |
+| Kerja | `tsvector` + `pgvector` + **RRF** · embed saat publish · endpoint search dengan filter izin | Halaman hasil pencarian (mockup s2): kartu hasil, snippet ter-highlight, panel filter, state kosong |
 
-Task: T-013, T-014, T-015, T-016
+**Akhir hari:** cari `SOP-IT-014` (identifier persis) dan "cara ganti sandi domain"
+(parafrase) — keduanya menemukan dokumen yang benar.
 
-## Minggu 4 — hardening & benar-benar dipakai
+## Hari 5 — Kamis 10 Sep · AI
 
-**Feature freeze pada hari ke-24.**
+| | Orang A | Orang B |
+| --- | --- | --- |
+| Kerja | `lib/ai/provider.ts` · endpoint RAG streaming · kontrak jawaban + jalur abstain · guard `AI_MAX_CLASSIFICATION` | Kotak jawaban AI di halaman search · halaman chat · chip sitasi yang bisa diklik ke bagian dokumen · state loading/error/abstain |
 
-Performa (index DB, budget bundle, LCP) · aksesibilitas dasar (keyboard, kontras, label) ·
-**UAT dengan 5–10 pengguna nyata** · perbaikan berdasarkan temuan UAT · **backup + latihan
-restore yang benar-benar dijalankan** · runbook operasional + panduan admin · dokumen
-handover + materi demo.
+**Akhir hari:** tanya AI → jawaban bersitasi. Tanya di luar korpus → mengaku tidak tahu.
 
-**Gate:** lima pengguna nyata menyelesaikan tiga skenario tanpa dibantu.
+## Hari 6 — Jumat 11 Sep · bukti & rapikan
 
-## Buffer
+| | Orang A | Orang B |
+| --- | --- | --- |
+| Kerja | Eval 10 pertanyaan · jalankan, perbaiki retrieval berdasarkan angka · index DB · `/api/health` | Lengkapi state kosong/error/tanpa izin · navigasi keyboard · kontras · cek bundle · `README` + skrip demo |
 
-Buffer 20% sudah termasuk di Minggu 4. Kalau Minggu 1–3 lancar, buffer dipakai untuk
-nice-to-have. Kalau tidak — dan biasanya tidak — buffer menyelamatkan tenggat.
-**Jangan pernah menjadwalkan fitur di dalam buffer.**
+**Akhir hari:** checklist "MVP tercapai" di `docs/scope-mvp.md` seluruhnya tercentang.
 
-## Prioritas ketika waktu habis
+## Urutan potong kalau waktu habis
 
-Urutan yang dipotong lebih dulu, dari atas:
+Dipotong dari atas. Jangan improvisasi urutan ini saat panik di hari ke-5:
 
-1. AI auto-fill metadata
-2. Peringkat "paling banyak dibaca"
-3. Konsol approval yang rapi (cukup daftar sederhana)
-4. Riwayat versi di UI (data tetap disimpan)
-5. Peringatan periode tinjau ulang
+1. Form buat/edit dokumen di UI — konten cukup dari seed
+2. Halaman chat terpisah — cukup kotak jawaban AI di halaman search
+3. Filter selain kategori
+4. `audit_log` write
+5. TOC hierarkis — cukup daftar heading datar
 
-Yang **tidak boleh** dipotong dalam keadaan apa pun: RBAC dan test kebocoran, sitasi + jalur
-abstain, pemeriksaan manusia atas hasil konversi, audit log, eval harness.
+**Tidak boleh dipotong dalam keadaan apa pun:** `visibleDocumentsFilter` + test kebocoran,
+sitasi, jalur abstain, dokumen sintetis, deploy yang bisa diakses.
 
-## Backlog v1.1 dan sesudahnya
+## Fase 2 — setelah MVP diterima
 
-Deteksi duplikasi (murah, sudah punya embedding) · approval berjenjang + auto-routing ·
-alur permintaan akses · dashboard analytics · reranker · impor satu arah dari repo Git
-(docs-as-code untuk developer) · SSO OIDC · OCR · XLSX/PPTX/ZIP · notifikasi email ·
-ekspor PDF dengan watermark klasifikasi.
+Urutan yang disarankan, satu per satu, masing-masing satu PR:
+
+1. Konversi PDF/DOCX + job queue + object storage (paket alami, ~2 hari)
+2. Alur review/approval + konsol antrean (mockup s6)
+3. Alur invite + konsol pengguna (mockup s8)
+4. UI riwayat versi + rollback
+5. Konsol taksonomi (mockup s7) + kategori hierarkis
+6. `Dockerfile` + `docker-compose` + uji portabilitas
+7. Rate limit + observability + backup/restore
+8. Reranker, deteksi duplikat, permintaan akses, sinkron AD
+
+Roadmap empat minggu versi awal tetap valid sebagai peta jalan setelah MVP — hanya urutannya
+yang berubah, bukan isinya.

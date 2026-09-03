@@ -33,8 +33,12 @@ Jangan menulis ADR untuk pilihan gaya kode atau hal yang bisa diubah dalam satu 
 | [0002](0002-content-source-of-truth.md) | Postgres sebagai source of truth konten | Diterima |
 | [0003](0003-ai-provider-and-data-classification.md) | Abstraksi provider AI & batas klasifikasi data | Diterima |
 | [0004](0004-rbac-and-permission-aware-retrieval.md) | RBAC & permission-aware retrieval | Diterima |
-| [0005](0005-deployment-and-portability.md) | Strategi deploy & portabilitas | Diterima |
+| [0005](0005-deployment-and-portability.md) | Strategi deploy & portabilitas | Diterima — bagian Docker ditunda oleh ADR-0007 |
 | [0006](0006-embedding-dimension.md) | Standardisasi dimensi embedding pada 1024 | Diterima |
+| [0007](0007-mvp-scope-reduction.md) | Pemotongan scope untuk MVP satu minggu | Diterima |
+
+ADR-0004 adalah satu-satunya yang **tidak boleh** dibatalkan tanpa ADR pengganti yang
+eksplisit. Sisanya bisa ditinjau ulang bila konteks berubah.
 
 ## Template
 
