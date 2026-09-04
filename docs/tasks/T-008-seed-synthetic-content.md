@@ -1,4 +1,4 @@
-# T-008: Seed 20–30 dokumen sintetis
+# T-008: Seed 20–25 dokumen sintetis
 
 - Pemilik: Orang B · Minggu 1 · Estimasi: 1 hari (bisa dicicil)
 
@@ -21,7 +21,9 @@ Ambil gaya penulisan, penomoran, dan struktur dari mockup.
 
 ## Lingkup
 
-- 20–30 dokumen Markdown di `db/seed/documents/`, dengan YAML frontmatter lengkap.
+- 20–25 dokumen Markdown di `db/seed/documents/`, dengan YAML frontmatter lengkap. Angka ini
+  ditetapkan di `docs/scope-mvp.md`; lebih banyak bukan lebih baik, karena setiap dokumen
+  harus tetap layak dibaca.
 - Tersebar di keenam kategori dan keempat level klasifikasi.
 - Gaya mengikuti contoh di mockup: `SOP-IT-014 Manajemen Identitas`,
   `Kebijakan Password & Autentikasi Perusahaan (ISMS-POL-07)`, `Matriks SLA Layanan IT 2026`,
@@ -31,17 +33,25 @@ Ambil gaya penulisan, penomoran, dan struktur dari mockup.
 - Sertakan beberapa dokumen yang **saling mirip** (misal dua kebijakan password dari tahun
   berbeda) untuk menguji ketajaman retrieval.
 - Beberapa dokumen sengaja dibuat kadaluarsa untuk menguji peringatan tinjau ulang.
-- `scripts/seed.ts` — idempotent: memuat dokumen, kategori, label, pengguna contoh untuk
-  setiap kombinasi role/clearance.
+- Heading bertingkat sampai tiga tingkat pada minimal tiga dokumen, agar `chunk.heading_path`
+  dan sitasi "Bagian 2.1.2" punya bahan uji yang sungguhan.
+- Minimal dua dokumen `restricted` pada dua kategori berbeda, agar cakupan kategori bisa diuji.
+- `scripts/seed.ts` — idempotent: memuat dokumen, kategori, label, dan **enam** pengguna:
+  kelima pengguna pada tabel `docs/rbac-matrix.md` ditambah satu pengguna dengan
+  `is_active = false` untuk `tests/rbac/inactive-user.spec.ts`.
 
 ## Acceptance criteria
 
 - [ ] `pnpm seed` berjalan dari database kosong maupun database yang sudah terisi
 - [ ] Keempat klasifikasi dan keenam kategori terwakili
 - [ ] Panjang dokumen bervariasi: ada yang satu halaman, ada yang panjang
-- [ ] Minimal 30 pertanyaan eval bisa dijawab dari korpus ini
+- [ ] Sepuluh pertanyaan eval di `docs/eval/questions.jsonl` bisa dijawab dari korpus ini,
+      termasuk satu pertanyaan yang sengaja **di luar** korpus untuk menguji jalur abstain
+- [ ] Enam pengguna seed ada, termasuk satu yang nonaktif dan satu reviewer bercakupan sempit
 - [ ] **Nol data Telkom asli.** Semua nama orang, sistem, dan angka bersifat fiktif
 - [ ] Frontmatter valid dan lolos validasi zod
+- [ ] Tidak ada angka dari mockup yang ikut tersalin sebagai fakta (1.284 dokumen, 318
+      pengguna, 96% akurasi, 42 kategori, 68 label — semuanya pengisi tempat)
 
 ## Batasan
 

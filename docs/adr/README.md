@@ -16,5 +16,8 @@ Kalau sebuah keputusan berubah, jangan sunting ADR lama. Tulis ADR baru yang men
 | [0008](0008-environments-and-cicd.md) | Lingkungan dan CI/CD | Diterima |
 | [0009](0009-rbac-cakupan-kategori.md) | RBAC dua dimensi: cakupan kategori | Diterima |
 | [0010](0010-chat-multi-turn.md) | Percakapan berlanjut pada AI Assistant | Diterima |
+| [0011](0011-visibilitas-dokumen-di-luar-izin.md) | Visibilitas dokumen di luar izin: tidak terlihat sama sekali | Diterima |
 
 ADR-0009 dan ADR-0010 lahir dari pemeriksaan ulang terhadap layar 9-11 mockup. Latar lengkapnya ada di `docs/mockup-alignment.md`.
+
+ADR-0011 lahir dari pemeriksaan layar 1-8, yang belum tercakup di `docs/mockup-alignment.md`. ADR ini memperjelas ADR-0004 dan tidak menggantikannya.

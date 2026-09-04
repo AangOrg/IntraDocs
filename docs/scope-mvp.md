@@ -1,15 +1,17 @@
 # Scope MVP — Mengikat
 
-Berkas ini menang atas `docs/prd.md`, `docs/architecture.md`, dan `docs/context-pack.md` bila terjadi pertentangan. Alasan pemotongan ada di ADR-0007. Penyesuaian setelah pemeriksaan layar 9-11 mockup ada di `docs/mockup-alignment.md`.
+Berkas ini menang atas `docs/prd.md`, `docs/architecture.md`, dan `docs/context-pack.md` bila terjadi pertentangan. Alasan pemotongan ada di ADR-0007. Penyesuaian setelah pemeriksaan layar 9-11 mockup ada di `docs/mockup-alignment.md`. Penyesuaian dari layar 2 ada di ADR-0011.
 
 Target: MVP bisa diklik pada Jumat, 11 September 2026, dari URL produksi.
+
+Kalau gerbang mutu di bawah tidak tercapai, yang bergeser adalah tanggalnya, bukan gerbangnya.
 
 ## Definisi selesai
 
 MVP dinyatakan tercapai bila seluruh butir berikut benar, diperiksa dari URL produksi dan bukan dari localhost.
 
 1. Tiga role berbeda masuk dan melihat katalog yang berbeda
-2. Dokumen di luar izin menghasilkan 404, bukan 403
+2. Dokumen di luar izin menghasilkan 404, bukan 403, dan judulnya tidak muncul di mana pun (ADR-0011)
 3. Reviewer dengan cakupan kategori sempit tidak melihat dokumen terbatas dari kategori lain
 4. Pencarian identifier persis dan pencarian parafrase, keduanya tepat
 5. Jawaban AI muncul dengan sitasi yang bisa diklik menuju bagian dokumen
@@ -17,20 +19,34 @@ MVP dinyatakan tercapai bila seluruh butir berikut benar, diperiksa dari URL pro
 7. Pertanyaan di luar korpus dijawab "tidak ditemukan", bukan dikarang
 8. Viewer tidak bisa memancing isi dokumen terbatas lewat jalur AI
 9. `pnpm test` hijau termasuk seluruh `tests/rbac/`
-10. `pnpm eval` mencetak angka, dan kebocoran bernilai nol
+10. `pnpm eval` mencetak angka, kebocoran bernilai nol, dan hit@5 tidak berada di bawah gerbang 0,7
 11. Halaman bisa dibuka dan dibaca di ponsel
 12. Orang lain bisa membukanya lewat URL tanpa dibantu
+
+## Gerbang mutu retrieval — satu tempat, dua angka
+
+Dua angka hit@5 beredar di repo ini dan sering tertukar. Keduanya ditulis di sini saja.
+Berkas lain menunjuk ke bagian ini alih-alih mengulang angkanya.
+
+- **Target: hit@5 ≥ 0,85.** Angka yang dikejar dan yang dilaporkan saat demo. Ini definisi "retrieval sudah baik".
+- **Gerbang berhenti-perbaiki: hit@5 < 0,7.** Di bawah angka ini, pekerjaan hari berikutnya berhenti sampai retrieval diperbaiki. Ini batas bawah, bukan target.
+- **Di antara 0,7 dan 0,85:** boleh lanjut, tetapi selisihnya dicatat di deskripsi PR T-009 beserta pertanyaan eval mana yang gagal.
+- **Kebocoran izin = 0.** Angka ini tidak punya rentang toleransi dan tidak punya gerbang bawah. Satu kebocoran berarti berhenti.
+- Angka mutu lain: abstain ≥ 90% untuk pertanyaan di luar korpus, p95 pencarian < 500 ms, p95 token pertama < 3 detik.
+
+Diukur oleh `scripts/eval-retrieval.ts` lewat `pnpm eval`, tanpa memanggil LLM generasi.
 
 ## Masuk MVP
 
 ### Identitas dan izin
 
-- Akun lokal, lima pengguna hasil seed, tanpa alur invite
+- Akun lokal, lima pengguna hasil seed ditambah satu pengguna nonaktif, tanpa alur invite
 - Empat role: `viewer`, `contributor`, `reviewer`, `admin`
 - Empat klasifikasi: `public`, `internal`, `restricted`, `secret`
 - Cakupan kategori per pengguna, `NULL` berarti semua kategori (ADR-0009)
 - Penanda aktif atau nonaktif pada pengguna; yang nonaktif tidak bisa masuk
 - Satu filter izin di SQL, dipakai katalog, kedua jalur pencarian, dan RAG
+- Dokumen di luar izin tidak terlihat sama sekali, termasuk judulnya dan termasuk pada jumlah hasil pencarian (ADR-0011)
 - Test kebocoran ditulis sebelum jalur AI ada
 
 ### Dokumen
@@ -74,11 +90,11 @@ MVP dinyatakan tercapai bila seluruh butir berikut benar, diperiksa dari URL pro
 
 ## Tidak masuk MVP
 
-Konversi PDF dan DOCX · OCR · job queue · object storage · alur invite · approval berjenjang · UI riwayat versi · permintaan akses · kategori hierarkis · role kustom · konsol admin dan dashboard · pengingat tinjau ulang otomatis · sinkronisasi Active Directory · SSO · notifikasi · pengayaan metadata otomatis · reranker · Docker · rate limit · Playwright · PWA sesungguhnya dengan service worker.
+Konversi PDF dan DOCX · OCR · job queue · object storage · alur invite · approval berjenjang · UI riwayat versi · permintaan akses (ADR-0011) · kategori hierarkis · role kustom · konsol admin dan dashboard · pengingat tinjau ulang otomatis · sinkronisasi Active Directory · SSO · notifikasi · pengayaan metadata otomatis · reranker · Docker · rate limit · Playwright · PWA sesungguhnya dengan service worker.
 
 ## Tambahan opsional
 
-Hanya dikerjakan bila hari 1 sampai 4 selesai tepat waktu. Tidak boleh menyingkirkan pekerjaan pada daftar wajib.
+Hanya dikerjakan bila pekerjaan pada daftar wajib sudah selesai dan gerbang mutu terlampaui. Tidak boleh menyingkirkan pekerjaan pada daftar wajib.
 
 1. Usulan ringkasan, kategori, dan label oleh AI saat publikasi
 2. Ekspor jawaban AI menjadi draf dokumen baru
@@ -91,12 +107,13 @@ Dipotong dari atas.
 2. Form buat dan sunting di UI — dokumen masuk lewat seed
 3. Selektor ruang lingkup jawaban
 4. Filter selain kategori
-5. Daftar heading hierarkis menjadi datar
+5. Kedalaman tampilan daftar heading di UI: tiga tingkat menjadi satu tingkat. **Yang dipotong hanya tampilannya.** `chunk.heading_path` tetap dihitung dan disimpan penuh.
 
 ## Tidak boleh dipotong
 
 - Filter izin di SQL dan test kebocorannya
 - Sitasi pada setiap jawaban
+- `chunk.heading_path` terisi penuh — sitasi "Bagian 2.1.2" dan navigasi dokumen keduanya bergantung padanya. Memotong ini sama dengan memotong sitasi, yang ada di daftar ini juga
 - Jalur abstain
 - Penulisan `audit_log` untuk dokumen terbatas — ini persyaratan kepatuhan, bukan fitur
 - Log kueri — biayanya satu `INSERT`, dan tanpanya dashboard fase 2 tidak punya data
