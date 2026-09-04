@@ -59,6 +59,8 @@ Super Admin dan Admin Knowledge berbeda pada tepat satu sel matriks, yaitu menge
 
 Dokumen `public` dan `internal` terlihat lintas kategori untuk semua role, sesuai baris pertama matriks.
 
+Tabel ini adalah **satu-satunya** penurunan klasifikasi tertinggi per pengguna. Tidak ada kolom clearance di tabel `user`: dua sumber kebenaran untuk satu aturan visibilitas dilarang ADR-0004. Lihat lingkup T-003.
+
 ## Satu filter, banyak pemakai
 
 `lib/rbac/visible-documents.ts` mengekspor `visibleDocumentsFilter(user): SQL`. Fungsi ini adalah satu-satunya tempat aturan visibilitas ditulis.
@@ -75,7 +77,7 @@ Aturan yang tidak boleh dilanggar:
 - Filter berada di klausa `WHERE`, tidak pernah di prompt LLM. Prompt bisa dibujuk, klausa `WHERE` tidak
 - Penyaringan terjadi **sebelum** potongan dokumen masuk ke konteks LLM, bukan sesudah
 - Penulisan ulang pertanyaan lanjutan tidak mengubah identitas penanya. Filter tetap memakai identitas asli
-- Dokumen di luar izin menghasilkan 404, bukan 403. 403 memberi tahu bahwa dokumennya ada
+- Dokumen di luar izin menghasilkan 404, bukan 403. 403 memberi tahu bahwa dokumennya ada. ADR-0011 memperjelas: judulnya pun tidak muncul di mana pun, termasuk pada jumlah hasil pencarian
 - Tidak ada jalur pintas untuk `admin` yang melewati fungsi ini. `admin` lolos karena aturannya, bukan karena dilewatkan
 
 ## Catatan penting tentang batas klasifikasi jalur AI
@@ -88,7 +90,7 @@ Saat sistem dipakai dengan dokumen sungguhan, nilainya diturunkan kembali dan mo
 
 ## Test yang wajib ada
 
-Ditulis pada hari 2, sebelum jalur AI dibangun.
+Ditulis pada hari 2, sebelum jalur AI dibangun. Ketujuhnya juga jadi kriteria terima T-005, dan prasyarat datanya jadi kriteria terima T-003 dan T-008.
 
 | Berkas | Yang dibuktikan |
 | --- | --- |
@@ -104,12 +106,17 @@ Ditulis pada hari 2, sebelum jalur AI dibangun.
 
 Dipilih agar setiap perbedaan izin terlihat saat demo, dan agar peninjau bisa berganti role sendiri.
 
-| Nama | Role | Klasifikasi | Cakupan kategori |
-| --- | --- | --- | --- |
-| Budi Hartono | `admin` | `secret` | Semua |
-| Andi Wijaya | `admin` | `secret` | Semua |
-| Dwi Kurniawan | `reviewer` | `restricted` | Keamanan Informasi saja |
-| Rizky Ananda | `contributor` | `restricted` | Infrastruktur, Data dan Integrasi |
-| Fajar Nugroho | `viewer` | `internal` | Semua |
+Enam baris, bukan lima. Kolom klasifikasi bukan kolom basis data — nilainya diturunkan dari `role` lewat tabel "Klasifikasi maksimum per role" di atas, dan ditulis di sini hanya sebagai pengingat saat membaca demo.
+
+| Nama | Role | Klasifikasi (turunan `role`) | Cakupan kategori | Status |
+| --- | --- | --- | --- | --- |
+| Budi Hartono | `admin` | `secret` | Semua | Aktif |
+| Andi Wijaya | `admin` | `secret` | Semua | Aktif |
+| Dwi Kurniawan | `reviewer` | `restricted` | Keamanan Informasi saja | Aktif |
+| Rizky Ananda | `contributor` | `restricted` | Infrastruktur, Data dan Integrasi | Aktif |
+| Fajar Nugroho | `viewer` | `internal` | Semua | Aktif |
+| Sari Puspita | `contributor` | `restricted` | Infrastruktur | **Nonaktif** (`is_active = false`) |
 
 Dwi Kurniawan adalah pengguna terpenting untuk demo: dialah yang membuktikan bahwa izin punya dua dimensi, bukan satu.
+
+Sari Puspita ada untuk satu alasan saja: `tests/rbac/inactive-user.spec.ts` butuh pengguna nonaktif, dan tanpa baris ini test itu lahir tanpa data. Rolenya sengaja `contributor`, bukan `viewer`, supaya yang dibuktikan adalah penanda nonaktif menang atas role yang seharusnya boleh menulis. Ia bukan pengguna demo: lima pengguna pertama yang dipakai saat presentasi, dan Sari tidak akan pernah berhasil masuk.
