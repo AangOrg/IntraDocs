@@ -90,6 +90,12 @@ satu tingkat (potongan #5 `docs/scope-mvp.md`). Yang dipotong tampilannya, bukan
 Enum `DocStatus` punya empat nilai, tetapi alur MVP hanya `draft` → `published`. `in_review`
 dan `archived` ada supaya tidak perlu migrasi saat approval dibangun di Fase 2.
 
+**"Terbatas" dan "Kedaluwarsa" bukan status.** Layar 3 mockup menampilkan keduanya di kolom
+Status, tetapi "Terbatas" adalah `classification` dan "Kedaluwarsa" adalah turunan
+`updated_at` + `review_period_days` yang dikembalikan lewat `reviewOverdue`. Jangan
+menambahkannya ke enum: dokumen kedaluwarsa tetap `published`, dan dokumen `restricted`
+tidak boleh muncul sama sekali bagi yang tidak berhak (ADR-0011).
+
 ## Autentikasi
 
 | Method | Path | Body / Query | Respons | Status |
@@ -101,7 +107,7 @@ dan `archived` ada supaya tidak perlu migrasi saat approval dibangun di Fase 2.
 
 `login` **wajib** menolak pengguna dengan `is_active = false` dengan `401` dan pesan yang
 sama seperti kata sandi salah. Ini yang dibuktikan `tests/rbac/inactive-user.spec.ts`, dan
-pengguna keenam pada tabel seed `docs/rbac-matrix.md` ada khusus untuk test ini.
+pengguna nonaktif pada tabel seed `docs/rbac-matrix.md` ada khusus untuk test ini.
 
 Body invite tidak lagi punya `clearance`: klasifikasi tertinggi diturunkan dari `role`
 (`docs/rbac-matrix.md`), dan kolom clearance per pengguna dilarang ADR-0004.
@@ -119,6 +125,11 @@ Body invite tidak lagi punya `clearance`: klasifikasi tertinggi diturunkan dari 
 | `GET` | `/api/documents/:id/versions` | — | `{ versions: Array<{ version, publishedAt, publishedBy }> }` | Fase 2 — tabel `document_version` sudah ada, UI riwayat versinya yang ditunda |
 | `GET` | `/api/categories` | — | pohon kategori | **MVP** — satu tingkat, `parent_id` tetap ada di skema |
 | `GET` | `/api/labels` | — | daftar label | **MVP** |
+
+Untuk Fase 2, `decision` pada `/api/documents/:id/review` bernilai `approve`,
+`request_changes`, atau `reject` — tiga tombol pada layar 6 mockup — dan jumlah tahap
+persetujuan mengikuti label serta klasifikasi dokumen. Pengindeksan ke AI hanya berjalan
+setelah dokumen `published`; ini aturan MVP juga, bukan hanya Fase 2.
 
 `sourceFileUrl` dihapus dari respons `/api/documents/:slug`: tanpa object storage di MVP,
 tidak ada berkas asli untuk ditautkan. Ia kembali bersama Fase 2 unggah multi-format.
@@ -142,9 +153,14 @@ Di MVP tidak ada jalur unggah berkas. Dokumen masuk lewat `pnpm seed` sebagai Ma
 | `POST` | `/api/uploads/complete` | `{ fileKey, fileName }` | `{ jobId, documentId }` | Fase 2 |
 | `GET` | `/api/uploads/:jobId` | — | `{ status, error?, documentId? }` | Fase 2 |
 
-Rencana Fase 2: batas 50 MB per berkas; format `.md`, `.txt`, `.docx`, `.pdf` (hanya PDF
-yang punya text layer); format lain ditolak dengan pesan yang jelas. Angka dan daftar format
-ini **bukan** cakupan MVP — MVP hanya `.md` dan `.txt`.
+Rencana Fase 2, sesuai layar 5 mockup: batas **50 MB per berkas**, dengan sembilan jenis
+masukan — PDF, DOCX/DOC, MD, XLSX, PPTX, TXT, HTML, gambar hasil pindai (OCR), dan ZIP.
+Urutan yang masuk akal saat dibangun: `.md` dan `.txt` (sudah ada di MVP), lalu `.docx` dan
+PDF ber-text-layer, lalu XLSX/PPTX, dan paling akhir OCR serta arsip ZIP karena keduanya
+menambah pemroses berkas tersendiri. Format lain ditolak dengan pesan yang jelas.
+
+Angka dan daftar format ini **bukan** cakupan MVP. MVP hanya `.md` dan `.txt`, dan tanpa
+jalur unggah sama sekali.
 
 ## Search
 
@@ -154,7 +170,8 @@ ini **bukan** cakupan MVP — MVP hanya `.md` dan `.txt`.
 
 Snippet menyorot istilah yang cocok. Search **tidak boleh** memanggil provider AI — harus
 tetap berfungsi ketika AI mati. Karena itu halaman hasil pencarian tidak punya kotak jawaban
-AI seperti layar 2 mockup; jawaban AI hidup di layar 9. Lihat `docs/mockup-alignment.md`.
+AI seperti layar 2 mockup; jawaban AI hidup di layar 9, dan layar 2 menautkan ke sana lewat
+tombol "Lanjutkan di chat" yang sudah ada di mockup. Lihat `docs/mockup-alignment.md`.
 
 `total` dan `items` memakai filter izin yang sama, dihitung dalam satu query (ADR-0011).
 Setiap baris pencarian menulis satu baris log kueri berisi kueri, jumlah hasil, dan role
@@ -210,3 +227,7 @@ Target: p95 token pertama < 3 detik.
 | `GET` | `/api/admin/audit` | audit log dengan filter | Fase 2 untuk UI; **penulisan** `audit_log` masuk MVP |
 | `POST` | `/api/jobs/tick` | dilindungi `JOB_TICK_SECRET`; dipanggil cron atau worker | Fase 2 — tabel `job` tidak dibuat |
 | `GET` | `/api/health` | memeriksa koneksi basis data dan ekstensi `vector` | **MVP** — tanpa pemeriksaan object storage |
+
+Tidak ada endpoint untuk "Aturan Otomatis" layar 7 (izin yang menempel pada kategori).
+Itu dimensi izin ketiga di luar model `role` × `category_scope`; lihat temuan 5 pada
+`docs/mockup-alignment.md`. Kalau nanti dibutuhkan, ia butuh ADR baru lebih dahulu.
