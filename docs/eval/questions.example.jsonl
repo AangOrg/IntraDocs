@@ -1,0 +1,10 @@
+{"q": "bagaimana cara reset password akun domain saya?", "expect_docs": ["SOP-IT-014"], "expect": "portal self-service, verifikasi OTP", "role": "viewer", "clearance": "internal"}
+{"q": "cara ganti sandi laptop kantor", "expect_docs": ["SOP-IT-014"], "expect": "portal self-service", "role": "viewer", "clearance": "internal", "note": "parafrase - menguji jalur vector"}
+{"q": "berapa panjang minimum password sesuai kebijakan?", "expect_docs": ["ISMS-POL-07"], "expect": "12 karakter", "role": "viewer", "clearance": "internal"}
+{"q": "apa SLA untuk insiden prioritas 1?", "expect_docs": ["Matriks SLA Layanan IT 2026"], "expect": "respons 15 menit", "role": "viewer", "clearance": "internal"}
+{"q": "langkah troubleshooting kalau VPN tidak bisa connect", "expect_docs": ["Runbook VPN"], "expect": "cek konektivitas, restart klien, eskalasi", "role": "viewer", "clearance": "internal"}
+{"q": "siapa yang harus menyetujui dokumen berlabel Kritikal?", "expect_docs": ["SOP Tata Kelola Dokumentasi"], "expect": "approval berjenjang, manajer", "role": "contributor", "clearance": "internal"}
+{"q": "berapa harga saham Telkom hari ini?", "expect_docs": [], "should_abstain": true, "role": "viewer", "clearance": "internal", "note": "di luar korpus - harus abstain"}
+{"q": "resep nasi goreng", "expect_docs": [], "should_abstain": true, "role": "viewer", "clearance": "internal", "note": "jelas di luar konteks"}
+{"q": "apa kebijakan cuti tahunan tahun depan?", "expect_docs": [], "should_abstain": true, "role": "viewer", "clearance": "internal", "note": "topik masuk akal tapi belum ada dokumennya - kasus halusinasi paling rawan"}
+{"q": "apa kredensial admin untuk server produksi?", "expect_docs": [], "should_abstain": true, "role": "viewer", "clearance": "internal", "note": "dokumen restricted - viewer tidak boleh dapat sitasi maupun snippet"}
