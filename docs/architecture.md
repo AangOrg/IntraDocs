@@ -1,165 +1,72 @@
-# Arsitektur
+# Arsitektur IntraDocs
 
-## Prinsip
+Satu aplikasi Next.js, satu basis data Postgres. Tidak ada komponen lain di MVP.
 
-1. **Satu runtime, satu database, satu deployable.** Setiap komponen tambahan harus
-   membayar biayanya sendiri dalam bentuk nilai yang jelas.
-2. **Portabilitas dari format, bukan dari storage.** Konten adalah Markdown + YAML
-   frontmatter, jadi kita tidak terikat pada database maupun vendor mana pun.
-3. **Keamanan sebagai kode, bukan sebagai janji.** Aturan akses dan batas klasifikasi
-   ditegakkan oleh query dan config, lalu diuji otomatis.
-4. **Degradasi berjenjang.** AI adalah lapisan di atas search, bukan gerbangnya.
+## Peta layar 11 mockup ke implementasi kita
 
-## Gambaran
+| Komponen di mockup | Implementasi kita | Catatan |
+|---|---|---|
+| Portal Web (Help Center) | Rute publik-internal Next.js | Dibangun |
+| Konsol Admin | Ditunda | Fase 2 |
+| AI Assistant | `/ai-assistant` + `/api/chat` | Dibangun |
+| Mobile Web / PWA | Tata letak responsif saja | Service worker & luring tidak dibangun |
+| API Gateway + SSO/OIDC | Route handler Next.js + Auth.js kredensial | OIDC di balik flag, ADR-0003 |
+| Layanan Dokumen | `lib/documents` | Dibangun |
+| Mesin Approval | Ditunda | Fase 2, sesuai roadmap mockup |
+| Layanan RBAC | `lib/rbac` | Dibangun, jadi satu titik |
+| Layanan Pencarian | Postgres `tsvector` | Digabung ke Postgres |
+| Layanan RAG | `lib/ai` + `/api/chat` | Dibangun |
+| Pemroses Berkas & OCR | Ditunda | MVP hanya `.md` dan `.txt` |
+| Notifikasi | Ditunda | Fase 2 |
+| PostgreSQL | Postgres 16 (Neon) | Sama |
+| Object Storage | Ditunda | Isi dokumen disimpan sebagai teks di DB |
+| Vector DB | `pgvector` di Postgres yang sama | Penyederhanaan sadar |
+| Search Index | `tsvector` di Postgres yang sama | Penyederhanaan sadar |
+| Audit Log | Tabel `audit_log` | Dibangun |
 
-```
-                    Browser (RSC, JS client minimal)
-                              |
-              +---------------+---------------+
-              |     Next.js 15 (App Router)   |
-              |  route handler + server action|
-              +---------------+---------------+
-                  |           |            |
-           +------+---+  +----+-----+  +---+-----------+
-           | Postgres |  | Object   |  | AI provider   |
-           | 16 +     |  | storage  |  | (abstraksi)   |
-           | pgvector |  | S3-compat|  | chat + embed  |
-           +----------+  +----------+  +---------------+
-                  ^
-                  |
-           +------+-------------------------+
-           | Job worker                     |
-           | Vercel Cron -> /api/jobs/tick  |
-           |   atau loop proses di Docker   |
-           +--------------------------------+
-```
+Dua penyederhanaan terakhir adalah keputusan, bukan kelalaian: pada 1.284 dokumen (angka mockup sendiri) maupun pada target rancangan 10.000 dokumen, memisahkan indeks menambah dua sistem untuk dirawat tanpa menambah kemampuan. Ambang untuk meninjau ulang ada di bagian Skala.
 
-Postgres memikul tiga peran sekaligus: relational, full-text search (`tsvector`), dan
-vector search (`pgvector`). Itu sebabnya tidak ada Elasticsearch dan tidak ada vector
-database terpisah — pada skala 10.000 dokumen, dua komponen itu hanya menambah biaya ops.
+## Bentuk runtime
 
-## Lapisan
+- Next.js 15 App Router, TypeScript strict, `output: 'standalone'`.
+- Semua route handler `export const runtime = 'nodejs'`. Tidak ada Edge runtime.
+- Tidak ada penulisan ke filesystem lokal. Tidak ada SDK spesifik vendor.
+- Jawaban AI dialirkan lewat SSE: `sources` → `token` → `done` → `error`.
 
-| Lapisan | Isi | Aturan |
-| --- | --- | --- |
-| `app/` | Route, layout, server action | Tipis. Tanpa business logic. |
-| `components/` | Komponen UI | Client component hanya bila perlu interaktivitas. |
-| `lib/` | Logic murni: rbac, chunker, rrf, parser, ai provider, schemas | Bisa diuji tanpa DB. Di sinilah unit test hidup. |
-| `db/` | Skema Drizzle + migrasi | Perubahan skema selalu lewat file migrasi. |
-| `scripts/` | seed, export-to-git, reindex, eval | Bisa dijalankan sendiri. |
+Aturan portabilitas ini yang membuat aplikasi bisa pindah dari Vercel ke server perusahaan tanpa menulis ulang. Lihat ADR-0005.
 
-## Alur ingest
+## Basis data — 11 tabel
 
-```
-upload
-  -> simpan berkas asli ke object storage + SHA-256
-  -> job convert       : DOCX (mammoth) | PDF text-layer (unpdf) | MD/TXT (passthrough)
-  -> job normalize     : susun YAML frontmatter, bersihkan header/footer/nomor halaman
-  -> draft             : MANUSIA memeriksa & memperbaiki hasil konversi   <- wajib
-  -> in_review         : reviewer kategori atau admin
-  -> published         : baris document_version baru, immutable
-  -> job index         : chunk -> embed -> simpan vector
-```
+| Tabel | Peran |
+|---|---|
+| `user` | Identitas, `role`, `clearance`, `unit`, `category_scope`, `is_active` |
+| `category` | Kategori, satu tingkat di MVP |
+| `label` | Label bebas |
+| `document` | Metadata + isi Markdown, `classification`, `status`, `owner_unit`, `review_period_days` |
+| `document_label` | Relasi banyak-ke-banyak |
+| `document_version` | Riwayat isi, tanpa UI di MVP |
+| `chunk` | Potongan + `embedding vector(1024)` + `embedding_model` + `content_hash` + `heading_path` |
+| `audit_log` | Unggah, setujui, baca dokumen terbatas, unduh |
+| `ai_query` | Satu baris per pencarian dan per pertanyaan AI |
+| `conversation` | Sesi percakapan AI |
+| `message` | Giliran percakapan |
 
-Kenapa pemeriksaan manusia wajib: konversi PDF ke Markdown tidak pernah sempurna,
-terutama tabel dan list bertingkat. Publikasi otomatis akan mencemari knowledge base,
-dan AI yang bersumber dari konten rusak akan terdengar meyakinkan sambil salah.
+`chunk` menyimpan salinan `classification` dan `owner_unit` dari dokumen induknya. Denormalisasi ini disengaja: filter izin bisa dijalankan di satu tabel saat pencarian vektor, tanpa join yang mematikan indeks.
 
-### Chunking
+## Dua jalur data
 
-- Heading-aware: potong pada batas heading Markdown, gabungkan bagian yang terlalu kecil.
-- Target 500–800 token, overlap sekitar 15%.
-- Simpan `heading_path`, misal `SOP-IT-014 > Reset via Service Desk > Verifikasi identitas`.
-  Ini yang membuat sitasi menunjuk ke **bagian**, bukan hanya ke dokumen.
-- Simpan `classification` dan `owner_unit` di baris chunk (denormalisasi) supaya filter izin
-  bisa dijalankan di dalam index scan tanpa join.
+**Publikasi.** Simpan dokumen → hitung `content_hash` → kalau berubah, potong per heading → embed serentak → tulis `chunk`. Hanya dokumen `published` yang diindeks. Embedding dilakukan langsung saat publikasi, bukan lewat antrean — pada volume ini antrean hanya menambah bagian yang bisa rusak.
 
-### Pola job
+**Menjawab.** Pertanyaan → (kalau lanjutan) tulis ulang jadi mandiri → jalankan pencarian kata kunci dan pencarian vektor secara paralel, keduanya sudah dibatasi `visibleDocumentsFilter` → gabungkan dengan RRF → ambil potongan teratas → susun prompt → alirkan jawaban dengan sitasi → catat ke `ai_query`.
 
-Satu tabel `job` di Postgres. Tanpa Redis, tanpa BullMQ.
+Satu retrieval per pertanyaan. Tidak ada tool calling, tidak ada agent. Alasannya di ADR-0010: RAG satu langkah bisa dievaluasi secara deterministik, agent tidak.
 
-- `POST /api/jobs/tick` (dilindungi `JOB_TICK_SECRET`) memproses maksimal N job lalu selesai.
-- Di Vercel: dipanggil Vercel Cron setiap menit. Di Docker: loop proses memanggil fungsi
-  yang sama. **Satu implementasi, dua environment.**
-- Satu tick mengerjakan satu langkah kecil (konversi satu dokumen, embed satu batch) agar
-  aman dari batas waktu serverless.
-- Job harus idempotent dengan kunci `document_version_id`. Ada retry dengan backoff dan
-  status `dead` setelah batas percobaan, plus tombol reindex manual di halaman admin.
+## Titik izin tunggal
 
-## Alur retrieval
+Semua jalur baca — katalog, pencarian kata kunci, pencarian vektor, retrieval RAG — memanggil `visibleDocumentsFilter(user)` yang mengembalikan fragmen SQL. Tidak ada jalur kedua. Kalau ada kode yang mengambil dokumen tanpa memanggilnya, itu bug keamanan, bukan pilihan gaya.
 
-```
-pertanyaan
-  -> visibleDocumentsFilter(user)        // menghasilkan predikat SQL
-  -> jalur A: full-text  (tsvector, ts_rank)      keduanya SUDAH terfilter
-  -> jalur B: vector     (pgvector, cosine)
-  -> Reciprocal Rank Fusion  => top-k
-  -> filter AI_MAX_CLASSIFICATION         // batas kepatuhan provider
-  -> skor tertinggi < threshold ? abstain : kirim ke LLM
-  -> jawaban wajib bersitasi -> catat ke ai_query
-```
+Dokumen yang tidak boleh dilihat menghasilkan **404, bukan 403**. 403 membocorkan keberadaan dokumen.
 
-**Kenapa hybrid, bukan vector saja.** Pertanyaan internal penuh identifier dan akronim:
-`SOP-IT-014`, `ISMS-POL-07`, `SSPR`, `ADUC`. Vector search sering gagal pada pencocokan
-persis semacam itu, sementara full-text unggul. Sebaliknya full-text gagal pada parafrase
-("cara ganti sandi domain" vs "reset password Active Directory"). Keduanya dibutuhkan;
-RRF menggabungkan peringkat tanpa perlu menyetel bobot skor yang tidak sebanding.
+## Skala dan kapan berubah
 
-**Kontrak jawaban.** Jawab hanya dari konteks. Setiap klaim bersitasi. Kalau tidak ada
-dasar, abstain dan tetap tampilkan dokumen yang mungkin relevan. Setiap sitasi menampilkan
-klasifikasi, tanggal update, dan status verifikasi — dan memperingatkan bila dokumen sudah
-melewati periode tinjau ulang.
-
-**Prompt injection.** Isi dokumen adalah input tidak terpercaya. Konteks dibungkus
-delimiter yang jelas dan diperlakukan sebagai data, bukan instruksi. AI chat tidak diberi
-akses tool atau write apa pun — read-only.
-
-## Keamanan
-
-- Satu fungsi `visibleDocumentsFilter(user)` dipakai oleh katalog, search, dan RAG.
-  Satu sumber kebenaran, tiga konsumen. Detail: `docs/rbac-matrix.md`.
-- Berkas asli diakses lewat signed URL berumur pendek, bukan path publik.
-- Render Markdown selalu melalui `rehype-sanitize`.
-- Rate limit pada login dan endpoint AI, per pengguna.
-- Audit log untuk akses dokumen `restricted`/`secret` dan untuk semua aksi admin.
-- `ai_query` menyimpan pertanyaan untuk keperluan eval dan audit, dengan retensi terbatas.
-- Dependency dipin, secret scanning aktif, CSP, HTTPS-only.
-
-## Budget performa (dicek di CI, bukan diharapkan)
-
-| Metrik | Target |
-| --- | --- |
-| JS terkirim per rute | < 150 KB gzip |
-| LCP halaman dokumen | < 2,5 s |
-| TTFB | < 500 ms |
-| p95 search | < 500 ms pada 10.000 dokumen |
-| p95 token pertama AI | < 3 s |
-
-Cara mencapainya: server-first (RSC + server action), Markdown dirender ke HTML di server
-dan di-cache per versi dokumen, ikon sebagai inline SVG sprite seperti pada mockup, tanpa
-state manager global, tanpa icon library besar.
-
-## Skala
-
-Didesain untuk **10.000 dokumen dan 2.000 pengguna**. Pada skala itu, pgvector dengan index
-HNSW plus full-text Postgres sangat memadai.
-
-Jalur peningkatan bila memang dibutuhkan: aplikasi stateless → scale horizontal; tambah
-worker job; read replica untuk beban baca; tambah reranker bila hit rate belum memadai.
-Bila melewati ~200.000 dokumen atau ~50 QPS search, baru pertimbangkan partisi index dan
-reranker terdedikasi. **Sebelum ambang itu, jangan dipikirkan.**
-
-Skalabilitas yang sesungguhnya relevan di sini bukan RPS, melainkan skalabilitas **konten
-dan kontributor**: taksonomi, kepemilikan dokumen, dan periode tinjau ulang adalah fitur
-skalabilitas.
-
-## Reliabilitas
-
-- Search tidak bergantung pada LLM. Provider AI mati → produk masih berguna.
-- Job idempotent, retry, dead-letter, dan reindex manual.
-- `/api/health` memeriksa DB dan object storage.
-- Structured logging (`pino`) + error tracking.
-- Backup harian **dan latihan restore yang benar-benar dijalankan**. Backup yang belum
-  pernah di-restore bukan backup.
-- Gagal cepat saat startup bila env wajib tidak ada, dengan pesan yang jelas.
-- Setiap tampilan punya state eksplisit: loading, kosong, error, tanpa izin, dan abstain.
+Rancangan ini nyaman sampai sekitar 10.000 dokumen dan 2.000 pengguna. Tinjau ulang bila melewati ~200.000 dokumen atau ~50 kueri per detik. Yang pertama pecah kemungkinan besar pencarian vektor; jalur keluarnya adalah indeks HNSW terpisah atau vector DB khusus — dan karena semua akses lewat satu fungsi filter, perpindahan itu terlokalisasi.

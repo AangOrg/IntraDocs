@@ -1,129 +1,56 @@
-# Context pack
+# Context Pack — fakta stabil IntraDocs
 
-Ringkasan kanonik proyek. **Tempel file ini** ke model AI mana pun di awal sesi, alih-alih
-menjelaskan ulang proyek. Jaga tetap di bawah 200 baris — kalau tumbuh, pindahkan detail
-ke dokumen lain dan tinggalkan tautan.
+Berkas ini sengaja pendek. Isinya hanya fakta yang tidak berubah selama sprint.
+Kalau ada yang bertentangan, urutan kekuatannya: `docs/scope-mvp.md` > ADR > berkas ini > sisanya.
 
-## Apa & kenapa
+## Proyek
 
-**IntraDocs** = knowledge hub internal + AI assistant yang jawabannya bisa dipertanggungjawabkan.
+IntraDocs — web dokumentasi internal dengan RBAC dan AI chat bersitasi.
+Konteks: tugas magang, 2 orang, dikerjakan dengan bantuan agent AI. Referensi produk: gitdoc.ai.
+Mockup: `intradocs-mockup_1.html` — 11 layar, bahasa Indonesia. Sumber kebenaran untuk tata letak dan istilah UI.
 
-Masalah: dokumentasi teknis dan SOP tersebar di banyak tempat (share drive, chat, email).
-Orang bertanya berulang ke helpdesk untuk hal yang jawabannya sudah tertulis. Search biasa
-gagal karena istilah pencarian tidak sama dengan istilah di dokumen.
+## Lima batasan keras
 
-Solusi: satu tempat untuk menyimpan dokumen sebagai Markdown, dengan kontrol akses per
-dokumen, ditambah AI chat yang menjawab hanya dari dokumen yang boleh dilihat penanya —
-lengkap dengan sitasi, tanggal update, dan status verifikasi.
+1. Seluruh isi dokumen bersifat sintetis dan fiktif. Tidak pernah ada dokumen Telkom asli di repo ini.
+2. Filter izin selalu dijalankan di SQL lewat `visibleDocumentsFilter()`. Tidak pernah di prompt LLM.
+3. Jangan pernah push ke `main`. Satu task satu branch `feat/T-0XX-slug`, lalu buka PR.
+4. Jangan merge PR atau menghapus branch tanpa permintaan eksplisit dari pemilik repo.
+5. Bahasa Indonesia untuk teks UI dan dokumen. Bahasa Inggris untuk identifier kode dan pesan commit.
 
-Referensi UX: gitdoc.ai (information architecture + citation UX). Bukan workflow Git-nya.
+## Kosakata domain (jangan dicampur)
 
-## Batasan proyek
+- **Klasifikasi keamanan bukan status alur kerja.** Dua kolom terpisah.
+  - `classification`: `public < internal < restricted < secret` (UI: Publik, Internal, Terbatas, Rahasia)
+  - `status`: `draft | in_review | published | archived`
+- Satu dokumen punya **tepat satu kategori** dan **banyak label**.
+- Role: `viewer | contributor | reviewer | admin`.
+- **Izin punya dua dimensi.** `role` menentukan *apa* yang boleh dilakukan; `user.category_scope` menentukan *di kategori mana*. Cakupan hanya berlaku untuk dokumen `restricted` dan `secret` — `public` dan `internal` tetap terlihat lintas kategori. Lihat ADR-0009.
 
-- **Tim 2 orang, target 4 minggu.** Pemotongan scope adalah keputusan default.
-- Dibangun dengan bantuan AI ("vibecoding") — karena itu spec, ADR, dan CI adalah
-  gerbang kualitas, bukan formalitas.
-- Data internal perusahaan → keamanan dan kepatuhan bukan fitur tambahan.
+## Identifier yang harus dipakai persis
 
-## Keputusan yang sudah dikunci
+| Hal | Nama |
+|---|---|
+| Filter izin | `lib/rbac/visible-documents.ts` → `visibleDocumentsFilter(user): SQL` |
+| Cek aksi | `lib/rbac/can.ts` → `can(user, action, resource)` |
+| Abstraksi AI | `lib/ai/provider.ts` → `embed()`, `chat()`, tipe `AiProvider` |
+| Test kebocoran | `tests/rbac/ai-retrieval-leak.spec.ts` |
+| Set evaluasi | `docs/eval/questions.jsonl` |
+| Perintah | `pnpm typecheck` · `pnpm lint` · `pnpm test` · `pnpm build` · `pnpm eval` · `pnpm reindex` |
 
-| Topik | Keputusan | ADR |
-| --- | --- | --- |
-| Stack | Next.js 15 + TS strict, Postgres 16 + pgvector, Drizzle, Auth.js, Tailwind + shadcn/ui | 0001 |
-| Source of truth konten | Postgres (Markdown + YAML frontmatter), + export nightly ke Git sebagai backup satu arah | 0002 |
-| AI provider | Belum diputuskan. Abstraksi provider + guard `AI_MAX_CLASSIFICATION` | 0003 |
-| RBAC | 4 role x 4 klasifikasi; filter izin di dalam SQL | 0004 |
-| Deploy | Vercel untuk dev/demo, Docker-ready sejak hari pertama, tanpa lock-in | 0005 |
-| Embedding | 1024 dimensi, final | 0006 |
+## Angka yang mengikat
 
-Yang belum diputuskan dan siapa penanggung jawabnya: `docs/decisions-open.md`.
+- Skema MVP: **11 tabel**. Embedding **1024 dimensi**. Potongan ~500–800 token, tumpang tindih ~15%.
+- Korpus sintetis: 20–25 dokumen `.md`, termasuk beberapa nyaris duplikat dan satu kedaluwarsa.
+- Set evaluasi: 10 pertanyaan.
+- Target: hit@5 ≥ 0,85 · kebocoran izin = 0 · 0 klaim tanpa sitasi · abstain ≥ 90% untuk pertanyaan di luar korpus · p95 pencarian < 500 ms · p95 token pertama < 3 detik.
+- Skala rancangan: 10.000 dokumen, 2.000 pengguna.
 
-## Model data (inti)
+## Angka yang TIDAK boleh dipakai
 
-```
-user            id, email, name, role, clearance, unit, password_hash
-invite          id, email, role, clearance, unit, token_hash, expires_at, used_at
-category        id, name, slug, parent_id
-label           id, name, color
-document        id, title, slug, category_id, classification, owner_unit,
-                status, review_period_days, current_version_id, created_by
-document_version id, document_id, version, markdown, frontmatter, source_file_key,
-                content_hash, published_at, published_by
-document_label  document_id, label_id
-chunk           id, document_version_id, heading_path, content, token_count,
-                embedding vector(1024), embedding_model,
-                classification, owner_unit          -- didenormalisasi untuk filter
-review          id, document_version_id, reviewer_id, decision, note, decided_at
-job             id, type, payload, status, attempts, run_after, last_error
-audit_log       id, actor_id, action, target_type, target_id, metadata, created_at
-document_view   id, document_id, user_id, created_at
-ai_query        id, user_id, question, retrieved_chunk_ids, answer, abstained, created_at
-```
+Semua angka di mockup (1.284 dokumen, 318 pengguna, 96% akurasi AI, 41 hasil, 18.402 pencarian) adalah pengisi tampilan dan **saling tidak konsisten satu sama lain**. Jangan pernah ditampilkan sebagai fakta di aplikasi. Angka di aplikasi selalu dihitung dari basis data.
 
-`classification`: `public` < `internal` < `restricted` < `secret`
-`role`: `viewer` | `contributor` | `reviewer` | `admin`
-`document.status`: `draft` | `in_review` | `published` | `archived`
+## Yang tidak dipakai (jangan diusulkan ulang)
 
-## Alur utama
+Microservices · Kubernetes · Kafka · Elasticsearch · vector DB terpisah · GraphQL · monorepo · Redis · LangChain/LlamaIndex/framework agent · fine-tuning · framework i18n · state manager global · auth buatan sendiri · realtime · OCR · aplikasi mobile · headless CMS · Docusaurus/MkDocs · Postgres RLS · Dockerfile/compose.
 
-**Ingest.** Upload → berkas asli ke object storage (+ SHA-256) → job konversi ke Markdown →
-normalisasi frontmatter → draft → **manusia memeriksa hasil konversi** → review/approval →
-published (baris versi baru, immutable) → job chunk + embed + index.
-
-**Search.** Query → Postgres full-text (`tsvector`) + pgvector cosine, keduanya sudah
-terfilter izin → gabung dengan Reciprocal Rank Fusion → hasil.
-
-**AI chat.** Pertanyaan → retrieval yang sama (terfilter izin, tersaring
-`AI_MAX_CLASSIFICATION`) → kalau skor di bawah threshold: abstain → kalau tidak: LLM
-menjawab dengan sitasi wajib → catat ke `ai_query`.
-
-## Aturan yang paling sering dilanggar (jangan)
-
-1. Filter izin **di dalam** query, bukan setelahnya, dan bukan di prompt.
-2. Hanya versi `published` yang masuk index retrieval. Draft tidak pernah bisa muncul di AI.
-3. Search harus tetap berfungsi saat provider AI mati. AI adalah lapisan di atas search,
-   bukan gerbangnya.
-4. Render markdown selalu lewat `rehype-sanitize`.
-5. Selama provider AI belum disetujui: **hanya dokumen sintetis/publik** yang boleh masuk
-   environment yang tersambung API publik.
-
-## Glosarium (ID ↔ EN)
-
-| Indonesia (UI) | English (kode) | Catatan |
-| --- | --- | --- |
-| Publik / Internal / Terbatas / Rahasia | `public` / `internal` / `restricted` / `secret` | Klasifikasi keamanan dokumen |
-| Pembaca | `viewer` | Hanya membaca |
-| Kontributor | `contributor` | Boleh membuat draft |
-| Peninjau | `reviewer` | Boleh menyetujui & publikasi di kategorinya |
-| Admin Knowledge | `admin` | Kelola user, taksonomi, semua dokumen |
-| Klasifikasi | `classification` | |
-| Kewenangan akses | `clearance` | Klasifikasi tertinggi yang boleh dilihat user |
-| Unit / Divisi | `unit` | Dipakai untuk cakupan akses |
-| Periode tinjau ulang | `review_period_days` | Dokumen kedaluwarsa → tampilkan peringatan |
-| Terverifikasi | `verified` | Sudah ditinjau pemilik dokumen |
-| Draft / Menunggu review / Terpublikasi | `draft` / `in_review` / `published` | |
-| Potongan dokumen | `chunk` | Unit retrieval |
-| Sitasi | `citation` | Menunjuk ke `chunk.heading_path` |
-
-## Environment variables
-
-```
-DATABASE_URL=
-AUTH_SECRET=
-S3_ENDPOINT= S3_BUCKET= S3_ACCESS_KEY_ID= S3_SECRET_ACCESS_KEY=
-AI_PROVIDER=            # openai | azure | ollama | none
-AI_BASE_URL=
-AI_API_KEY=
-AI_CHAT_MODEL=
-AI_EMBEDDING_MODEL=
-AI_EMBEDDING_DIM=1024   # jangan diubah, lihat ADR-0006
-AI_MAX_CLASSIFICATION=public   # public | internal | restricted | secret
-JOB_TICK_SECRET=
-ENABLE_OIDC=false
-OIDC_ISSUER= OIDC_CLIENT_ID= OIDC_CLIENT_SECRET=
-```
-
-## Status saat ini
-
-Pra-implementasi. Yang ada di repo: mockup HTML dan artifak perancangan.
-Pekerjaan berikutnya: `docs/tasks/` (mulai dari T-001).
+Alasan tiap penolakan ada di ADR-0001 dan ADR-0007. Kalau mau membuka ulang salah satunya, tulis ADR baru — jangan diam-diam menambah dependensi.
