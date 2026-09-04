@@ -1,117 +1,115 @@
-# RBAC & model akses
+# Matriks RBAC
 
-Kontrol akses di IntraDocs punya dua dimensi:
+Sumber: layar 8 mockup, ditambah definisi "terbatas" pada catatan di bawah matriksnya. Keputusan pemetaan ada di ADR-0004 dan ADR-0009.
 
-- **Role** menentukan *apa yang boleh dilakukan* (aksi).
-- **Klasifikasi + cakupan unit** menentukan *apa yang boleh dilihat* (data).
+Berkas ini adalah acuan pemeriksaan diff. Setiap perubahan pada jalur izin harus diperiksa terhadap tabel di bawah.
 
-Keduanya harus dipenuhi. Role `admin` adalah satu-satunya yang melewati batas klasifikasi.
+## Izin punya dua dimensi
 
-## Role
+Ini bagian yang paling mudah salah dibaca dari mockup, dan paling mahal kalau salah dimodelkan.
 
-Empat role. Jangan menambah role tanpa ADR.
+- **Role** menentukan *apa* yang boleh dilakukan
+- **Cakupan kategori** menentukan *di mana* izin itu berlaku
+- **Klasifikasi** menentukan *seberapa sensitif* dokumen yang boleh dilihat
 
-| Role | Baca | Buat draft | Setujui & publikasi | Kelola user & taksonomi |
-| --- | --- | --- | --- | --- |
-| `viewer` | sesuai klasifikasi & unit | — | — | — |
-| `contributor` | sesuai klasifikasi & unit | ya | — | — |
-| `reviewer` | ditambah semua draft pada kategori yang diampu | ya | ya, pada kategori yang diampu | — |
-| `admin` | semua | ya | ya | ya |
+Contoh dari mockup sendiri: Reviewer Keamanan tidak dapat menyetujui dokumen Aplikasi Internal. Rolenya cukup, cakupannya tidak.
 
-Opsional dan murah: `auditor`, read-only terhadap `audit_log` tanpa akses konten.
-Belum termasuk MVP.
+Tanda pada matriks di bawah:
 
-## Klasifikasi
+- `Y` diizinkan
+- `S` diizinkan, terbatas pada cakupan kategori pengguna
+- `N` tidak diizinkan
 
-`public` < `internal` < `restricted` < `secret`
+## Pemetaan role
 
-Di UI: Publik, Internal, Terbatas, Rahasia.
+Mockup punya lima role bawaan ditambah kemampuan membuat role kustom. MVP memakai empat.
 
-Setiap pengguna punya `clearance` bernilai salah satu dari daftar yang sama. Pengguna hanya
-boleh melihat dokumen dengan `classification <= clearance`.
+| Role mockup | Role kita | Catatan |
+| --- | --- | --- |
+| Super Admin | `admin` | Digabung |
+| Admin Knowledge | `admin` | Digabung |
+| Reviewer | `reviewer` | |
+| Contributor | `contributor` | |
+| Viewer | `viewer` | |
+| Role kustom | — | Fase 2, butuh editor izin |
 
-## Aturan visibilitas
+Super Admin dan Admin Knowledge berbeda pada tepat satu sel matriks, yaitu mengelola pengguna dan role. Konsol pengguna tidak ada di MVP, jadi perbedaannya belum dapat diamati. Memisahkannya nanti berarti menambah satu nilai role dan satu pemeriksaan izin.
 
-Sebuah dokumen terlihat oleh pengguna bila:
+## Matriks izin
 
-```
-role = admin
-ATAU (
-  status = 'published'
-  DAN classification <= user.clearance
-  DAN (
-        classification <= 'internal'          -- terbuka untuk seluruh organisasi
-     OR owner_unit = user.unit                -- cakupan unit
-     OR EXISTS grant eksplisit (document_grant)
-  )
-)
-ATAU (role = 'reviewer' DAN kategori dokumen termasuk yang diampu)   -- termasuk draft
-ATAU (created_by = user.id)                                          -- draft milik sendiri
-```
+| Izin | admin | reviewer | contributor | viewer | Status MVP |
+| --- | --- | --- | --- | --- | --- |
+| Membaca dokumen Publik dan Internal | Y | Y | Y | Y | Masuk |
+| Membaca dokumen Terbatas dan Rahasia | Y | S | S | N | Masuk |
+| Mengunggah dan menyunting dokumen | Y | Y | Y | N | Masuk |
+| Memakai AI Assistant | Y | Y | Y | Y | Masuk |
+| Menyetujui atau menolak pengajuan | Y | S | N | N | Fase 2 |
+| Mengelola kategori dan label | Y | N | N | N | Fase 2 |
+| Mengelola pengguna dan role | Y | N | N | N | Fase 2 |
+| Melihat audit log dan analitik | Y | S | N | N | Fase 2 untuk UI; penulisan log masuk MVP |
 
-Catatan desain: dokumen `restricted` dan `secret` **tidak** otomatis terlihat oleh seluruh
-organisasi walaupun clearance mencukupi — masih perlu kecocokan unit atau grant eksplisit.
-Ini mencegah clearance tinggi berubah menjadi akses menyeluruh.
+## Klasifikasi maksimum per role
 
-## Kontrak `visibleDocumentsFilter`
+| Role | Klasifikasi tertinggi yang boleh dibaca | Dibatasi cakupan kategori? |
+| --- | --- | --- |
+| `viewer` | `internal` | Tidak relevan |
+| `contributor` | `restricted` | Ya, untuk `restricted` ke atas |
+| `reviewer` | `restricted` | Ya, untuk `restricted` ke atas |
+| `admin` | `secret` | Tidak |
 
-```ts
-// lib/rbac/visible-documents.ts
-export function visibleDocumentsFilter(user: SessionUser): SQL
-```
+Dokumen `public` dan `internal` terlihat lintas kategori untuk semua role, sesuai baris pertama matriks.
 
-Aturan penggunaan:
+## Satu filter, banyak pemakai
 
-1. Fungsi ini menghasilkan **predikat SQL**, dan harus dipakai oleh:
-   - daftar katalog dan halaman kategori
-   - kedua jalur retrieval search (full-text dan vector)
-   - retrieval RAG untuk AI chat
-   - endpoint API apa pun yang mengembalikan dokumen atau chunk
-2. **Tidak boleh** ada penyaringan izin setelah query di layer aplikasi sebagai satu-satunya
-   mekanisme, dan **tidak boleh sama sekali** ada penyaringan izin di prompt LLM.
-3. Tabel `chunk` menyimpan salinan `classification` dan `owner_unit` supaya predikat yang
-   sama bisa dijalankan langsung pada chunk tanpa join.
-4. Setiap penambahan jalur baca baru wajib menambah test kebocoran.
+`lib/rbac/visible-documents.ts` mengekspor `visibleDocumentsFilter(user): SQL`. Fungsi ini adalah satu-satunya tempat aturan visibilitas ditulis.
 
-### Kenapa ini ditulis sebagai aturan keras
+Pemakainya wajib empat, tanpa kecuali:
 
-Kebocoran paling umum pada aplikasi RAG adalah: ambil top-50 chunk dari seluruh korpus, lalu
-perintahkan LLM "jangan sebutkan yang rahasia". Itu **bukan kontrol keamanan**. Model bisa
-dibujuk, dan judul beserta snippet dokumen saja sudah merupakan kebocoran.
+1. Katalog dokumen
+2. Pencarian kata kunci
+3. Pencarian vektor
+4. Retrieval untuk jawaban AI
 
-## Batas klasifikasi untuk provider AI
+Aturan yang tidak boleh dilanggar:
 
-Selain izin pengguna, ada satu batas lagi: `AI_MAX_CLASSIFICATION`.
+- Filter berada di klausa `WHERE`, tidak pernah di prompt LLM. Prompt bisa dibujuk, klausa `WHERE` tidak
+- Penyaringan terjadi **sebelum** potongan dokumen masuk ke konteks LLM, bukan sesudah
+- Penulisan ulang pertanyaan lanjutan tidak mengubah identitas penanya. Filter tetap memakai identitas asli
+- Dokumen di luar izin menghasilkan 404, bukan 403. 403 memberi tahu bahwa dokumennya ada
+- Tidak ada jalur pintas untuk `admin` yang melewati fungsi ini. `admin` lolos karena aturannya, bukan karena dilewatkan
 
-| Nilai env | Arti |
+## Catatan penting tentang batas klasifikasi jalur AI
+
+Env `AI_MAX_CLASSIFICATION` membatasi klasifikasi tertinggi yang boleh dikirim ke penyedia AI eksternal. Ini pengaman untuk penerapan sungguhan, dan menjawab persyaratan "data tetap di lingkungan perusahaan" pada layar 11.
+
+Selama sprint, nilainya **harus** dibuka sampai `secret`, karena seluruh korpus bersifat sintetis dan fiktif sehingga tidak ada yang perlu dilindungi. Kalau dibiarkan pada `public`, jalur AI hanya pernah melihat dokumen publik, dan perbedaan jawaban antar role — yang justru merupakan inti demo — tidak akan pernah terlihat.
+
+Saat sistem dipakai dengan dokumen sungguhan, nilainya diturunkan kembali dan model lokal dipakai untuk klasifikasi di atas batas itu.
+
+## Test yang wajib ada
+
+Ditulis pada hari 2, sebelum jalur AI dibangun.
+
+| Berkas | Yang dibuktikan |
 | --- | --- |
-| `public` | Hanya dokumen publik boleh dikirim ke provider AI. Dipakai saat provider belum disetujui. |
-| `internal` | Sampai `internal`. |
-| `restricted` / `secret` | Hanya setelah persetujuan keamanan dan legal. |
+| `tests/rbac/ai-retrieval-leak.spec.ts` | Potongan dokumen di luar izin tidak pernah masuk konteks LLM |
+| `tests/rbac/catalog-visibility.spec.ts` | Katalog per role berisi tepat dokumen yang boleh dilihat |
+| `tests/rbac/search-visibility.spec.ts` | Kedua jalur pencarian menyaring dengan filter yang sama |
+| `tests/rbac/category-scope.spec.ts` | Reviewer dengan cakupan sempit tidak menerima dokumen terbatas dari kategori lain, lewat katalog, pencarian, maupun AI |
+| `tests/rbac/ai-max-classification.spec.ts` | Batas klasifikasi jalur AI dihormati |
+| `tests/rbac/audit-log.spec.ts` | Pembacaan dokumen terbatas tercatat |
+| `tests/rbac/inactive-user.spec.ts` | Pengguna nonaktif tidak bisa masuk |
 
-Chunk di atas batas ini tidak pernah dikirim ke provider, walaupun pengguna berwenang
-membacanya. UI menjelaskan bahwa jawaban dibatasi kebijakan AI yang berlaku, dan pengguna
-tetap diarahkan untuk membaca dokumennya langsung. Lihat ADR-0003.
+## Pengguna seed
 
-## Audit
+Dipilih agar setiap perbedaan izin terlihat saat demo, dan agar peninjau bisa berganti role sendiri.
 
-Catat ke `audit_log`:
+| Nama | Role | Klasifikasi | Cakupan kategori |
+| --- | --- | --- | --- |
+| Budi Hartono | `admin` | `secret` | Semua |
+| Andi Wijaya | `admin` | `secret` | Semua |
+| Dwi Kurniawan | `reviewer` | `restricted` | Keamanan Informasi saja |
+| Rizky Ananda | `contributor` | `restricted` | Infrastruktur, Data dan Integrasi |
+| Fajar Nugroho | `viewer` | `internal` | Semua |
 
-- Setiap akses dokumen `restricted` atau `secret`, beserta jalur akses
-  (katalog / search / chat / tautan langsung).
-- Setiap keputusan publikasi dan penolakan review.
-- Setiap perubahan role, clearance, unit, dan klasifikasi dokumen.
-- Setiap aksi admin.
-
-Jangan menyimpan isi dokumen di dalam audit log. Simpan referensi saja.
-
-## Test wajib
-
-| Test | Memastikan |
-| --- | --- |
-| `tests/rbac/catalog-visibility.spec.ts` | Katalog dan API tidak membocorkan dokumen di luar izin |
-| `tests/rbac/search-visibility.spec.ts` | Kedua jalur retrieval terfilter di dalam SQL |
-| `tests/rbac/ai-retrieval-leak.spec.ts` | AI chat tidak mengembalikan isi, judul, maupun snippet dokumen terlarang. **Test pertama yang ditulis di proyek ini** |
-| `tests/rbac/ai-max-classification.spec.ts` | Guard klasifikasi provider ditegakkan |
-| `tests/rbac/audit-log.spec.ts` | Akses sensitif terekam |
-| `tests/rbac/reviewer-scope.spec.ts` | Reviewer tidak bisa mempublikasikan di luar kategorinya |
+Dwi Kurniawan adalah pengguna terpenting untuk demo: dialah yang membuktikan bahwa izin punya dua dimensi, bukan satu.

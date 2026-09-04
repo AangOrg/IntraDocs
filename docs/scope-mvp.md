@@ -1,86 +1,108 @@
-# Scope MVP — sprint 6 hari
+# Scope MVP — Mengikat
 
-Dokumen ini **mengikat**. Kalau ada konflik dengan dokumen lain (termasuk
-`docs/context-pack.md`, `docs/architecture.md`, atau `docs/prd.md`), yang berlaku adalah
-dokumen ini sampai MVP selesai. Alasan pemotongan ada di
-`docs/adr/0007-mvp-scope-reduction.md`.
+Berkas ini menang atas `docs/prd.md`, `docs/architecture.md`, dan `docs/context-pack.md` bila terjadi pertentangan. Alasan pemotongan ada di ADR-0007. Penyesuaian setelah pemeriksaan layar 9-11 mockup ada di `docs/mockup-alignment.md`.
 
-Konteks: dua orang, enam hari kerja, dikerjakan dengan bantuan agent AI. Statusnya
-eksperimen — tetapi harus rapi dan layak dipakai kalau ternyata diteruskan.
+Target: MVP bisa diklik pada Jumat, 11 September 2026, dari URL produksi.
 
-## Prinsip pemotongan
+## Definisi selesai
 
-Yang dipertahankan adalah hal yang **tidak bisa ditambahkan belakangan tanpa membongkar
-fondasi**, ditambah hal yang membentuk cerita demo. Yang dipotong adalah hal yang bisa
-ditempelkan nanti tanpa mengubah skema atau arsitektur.
+MVP dinyatakan tercapai bila seluruh butir berikut benar, diperiksa dari URL produksi dan bukan dari localhost.
 
-Satu kalimat penguji: *kalau fitur ini tidak ada, apakah demo masih membuktikan bahwa
-dokumentasi internal bisa ditanyakan ke AI secara kredibel dan aman?* Kalau masih, potong.
+1. Tiga role berbeda masuk dan melihat katalog yang berbeda
+2. Dokumen di luar izin menghasilkan 404, bukan 403
+3. Reviewer dengan cakupan kategori sempit tidak melihat dokumen terbatas dari kategori lain
+4. Pencarian identifier persis dan pencarian parafrase, keduanya tepat
+5. Jawaban AI muncul dengan sitasi yang bisa diklik menuju bagian dokumen
+6. Pertanyaan lanjutan yang tidak berdiri sendiri tetap dijawab benar
+7. Pertanyaan di luar korpus dijawab "tidak ditemukan", bukan dikarang
+8. Viewer tidak bisa memancing isi dokumen terbatas lewat jalur AI
+9. `pnpm test` hijau termasuk seluruh `tests/rbac/`
+10. `pnpm eval` mencetak angka, dan kebocoran bernilai nol
+11. Halaman bisa dibuka dan dibaca di ponsel
+12. Orang lain bisa membukanya lewat URL tanpa dibantu
 
-## MASUK — dikerjakan minggu ini
+## Masuk MVP
 
-| Fitur | Kenapa tidak bisa ditunda |
-| --- | --- |
-| Auth akun lokal (5 user hasil seed) | Tanpa identitas, RBAC tidak bisa didemokan |
-| 4 role × 4 klasifikasi + `visibleDocumentsFilter` di SQL | Ini pembeda utama produk, dan menyusupkannya belakangan berarti membongkar setiap query |
-| Test kebocoran RBAC | Satu-satunya bukti bahwa klaim keamanan benar |
-| Katalog + kategori + label + filter | Layar utama (mockup s3) |
-| Viewer dokumen + TOC + metadata + badge klasifikasi | Layar yang paling sering dilihat (mockup s4) |
-| Buat/edit draft Markdown → publish | Alur kontribusi minimum |
-| 20–25 dokumen sintetis | Tanpa konten, tidak ada yang bisa didemokan |
-| Hybrid search: FTS + pgvector + RRF | Inti "kredibel"; sekitar 100 baris |
-| AI chat: RAG + sitasi + abstain | Fitur utama yang diminta |
-| Eval 10 pertanyaan | Bukti angka, bukan klaim |
-| Deploy ke Vercel + Neon | Harus bisa diklik orang lain |
-| Design token dari mockup | Membuat hasilnya terlihat profesional sejak hari pertama, biayanya setengah hari |
-| Struktur modular (`lib/` logic murni) | Gratis kalau dari awal, mahal kalau menyusul |
+### Identitas dan izin
 
-## KELUAR — fase 2, sudah dipikirkan tapi tidak dikerjakan sekarang
+- Akun lokal, lima pengguna hasil seed, tanpa alur invite
+- Empat role: `viewer`, `contributor`, `reviewer`, `admin`
+- Empat klasifikasi: `public`, `internal`, `restricted`, `secret`
+- Cakupan kategori per pengguna, `NULL` berarti semua kategori (ADR-0009)
+- Penanda aktif atau nonaktif pada pengguna; yang nonaktif tidak bisa masuk
+- Satu filter izin di SQL, dipakai katalog, kedua jalur pencarian, dan RAG
+- Test kebocoran ditulis sebelum jalur AI ada
 
-| Yang dipotong | Kenapa aman ditunda | Biaya menambahkan nanti |
-| --- | --- | --- |
-| Konversi PDF/DOCX → Markdown | Minggu ini terima `.md` dan `.txt` saja. Ini sumber bug terbesar dan risiko kualitas tertinggi | 1–2 hari, terisolasi di `lib/parsers/` |
-| Job queue (`job` + `/api/jobs/tick` + cron) | 25 dokumen bisa di-embed langsung saat publish. Satu dokumen 10 chunk = satu panggilan API | 0,5 hari, dibutuhkan hanya saat upload PDF masuk |
-| Object storage (R2/MinIO) | Tanpa upload berkas biner, tidak ada yang perlu disimpan | 2 jam, API S3 sudah standar |
-| Alur invite | 5 user hasil seed cukup untuk demo | 0,5 hari |
-| Alur review/approval berjenjang | Cukup tombol publish oleh reviewer/admin | 1 hari |
-| UI riwayat versi + rollback | Tabel `document_version` tetap dibuat, jadi datanya sudah ada | 0,5 hari, murni UI |
-| `document_grant` + alur permintaan akses | Klasifikasi + unit sudah cukup untuk mendemokan RBAC | 0,5 hari |
-| Kategori hierarkis 3 tingkat | Enam kategori datar + label sudah cukup pada 25 dokumen | 0,5 hari |
-| Konsol admin (taksonomi, user, audit) | Kelola lewat SQL/script dulu | 1–2 hari |
-| Docker + docker-compose | Vercel + Neon lebih cepat untuk minggu ini. Aturan portabilitas tetap ditegakkan | 0,5 hari, dan itulah gunanya aturan |
-| Rate limit, Sentry, `pino` | Belum ada beban dan belum ada pengguna nyata | 2 jam |
-| Playwright E2E | Vitest untuk RBAC sudah menutup risiko terbesar | 0,5 hari |
-| Sinkron Active Directory (mockup s8) | Butuh akses infrastruktur yang tidak kita punya | Fase 3 |
-| Auto-label AI, saran perapian taksonomi (mockup s7) | Fitur pemanis | Fase 2 |
-| Deteksi duplikat, OCR, XLSX/PPTX, notifikasi email | Semuanya pemanis | Fase 2–3 |
+### Dokumen
 
-## Tetap ditegakkan walaupun scope dipotong
+- Format `.md` dan `.txt` saja
+- Status `draft` dan `published`; tanpa approval berjenjang
+- Satu kategori per dokumen, banyak label
+- Kategori satu tingkat, tetapi kolom induk sudah ada di skema
+- Viewer dokumen dengan daftar heading dan sitasi yang bisa dituju
+- Form buat dan sunting sederhana
+- Pemeriksaan pola konten sensitif saat publikasi, dengan peringatan yang bisa dilewati sadar
+- Penanda kedaluwarsa sebagai nilai turunan dari `updated_at` dan `review_period_days`
+- Penulisan `audit_log` untuk pembacaan dokumen `restricted` dan `secret`
 
-Ini yang membedakan "MVP rapi" dari "MVP asal jadi":
+### Pencarian dan AI
 
-- **Nol logic izin di prompt LLM.** Filter tetap di SQL. Tidak ada pengecualian.
-- **Skema tetap lengkap** untuk `document_version`, `audit_log`, `chunk.embedding_model`,
-  `content_hash` — walaupun UI-nya belum ada. Menambah kolom belakangan pada tabel besar
-  jauh lebih mahal daripada membuatnya kosong sekarang.
-- **Embedding tetap 1024 dimensi** (ADR-0006).
-- **`lib/` tetap berisi logic murni tanpa dependensi framework**, dan tetap diuji.
-- **Nol warna hardcoded**; semua lewat token.
-- **Nol dokumen Telkom asli.** Seluruh konten sintetis dan fiktif.
-- **TypeScript strict, tanpa `any`.**
-- **Setiap tampilan punya state loading, kosong, error, dan tanpa izin.**
+- Hybrid: BM25 lewat tsvector dan vektor lewat pgvector, digabung RRF
+- Halaman hasil pencarian dengan filter kategori
+- Halaman AI Assistant tersendiri
+- Percakapan berlanjut dengan penulisan ulang pertanyaan lanjutan (ADR-0010)
+- Ruang lingkup jawaban: seluruh basis pengetahuan, satu kategori, atau satu dokumen
+- Sitasi wajib pada setiap pernyataan, menyebut dokumen, bagian, dan versi
+- Jalur abstain bila tidak ada dasar yang cukup
+- Umpan balik jempol atas dan bawah
+- Satu baris log per pencarian dan per pertanyaan AI, berisi kueri, jumlah hasil, menjawab atau abstain, dan role penanya
+- Embedding dihitung serentak saat publikasi, tanpa job queue
+- Hanya dokumen `published` yang diindeks
 
-## Definisi "MVP tercapai"
+### Antarmuka
 
-MVP dinyatakan selesai bila seluruh pernyataan berikut benar, diperiksa dari URL produksi:
+- Design token diambil dari variabel CSS mockup, tanpa warna keras di kode
+- `AppShell` dengan sidebar yang menutup di bawah titik potong
+- Komponen bersama dibuat lebih dulu sebelum halaman
+- Setiap daftar punya empat keadaan: memuat, kosong, gagal, tidak berizin
 
-- [ ] Login sebagai tiga role berbeda menghasilkan katalog yang berbeda, sesuai matriks RBAC
-- [ ] Membuka dokumen di luar izin menghasilkan 404, bukan 403
-- [ ] Search satu identifier persis (`SOP-IT-014`) dan satu parafrase, keduanya menemukan
-      dokumen yang benar
-- [ ] Tanya AI → jawaban muncul dengan sitasi yang bisa diklik ke bagian dokumen
-- [ ] Tanya sesuatu di luar korpus → AI menjawab tidak tahu, tidak mengarang
-- [ ] Tanya sebagai `viewer` tentang dokumen `restricted` → tidak ada isi maupun judul yang bocor
-- [ ] `pnpm test` hijau, termasuk seluruh test di `tests/rbac/`
-- [ ] `pnpm eval` mencetak angka, dan `rbac_leak = 0`
-- [ ] Aplikasi bisa dibuka orang lain lewat URL tanpa dibantu
+### Kualitas
+
+- Eval sepuluh pertanyaan termasuk pertanyaan di luar korpus
+- Dua puluh sampai dua puluh lima dokumen sintetis, termasuk near-duplicate dan satu dokumen kedaluwarsa
+- `typecheck`, `lint`, `test`, `build` hijau di CI sebelum merge
+
+## Tidak masuk MVP
+
+Konversi PDF dan DOCX · OCR · job queue · object storage · alur invite · approval berjenjang · UI riwayat versi · permintaan akses · kategori hierarkis · role kustom · konsol admin dan dashboard · pengingat tinjau ulang otomatis · sinkronisasi Active Directory · SSO · notifikasi · pengayaan metadata otomatis · reranker · Docker · rate limit · Playwright · PWA sesungguhnya dengan service worker.
+
+## Tambahan opsional
+
+Hanya dikerjakan bila hari 1 sampai 4 selesai tepat waktu. Tidak boleh menyingkirkan pekerjaan pada daftar wajib.
+
+1. Usulan ringkasan, kategori, dan label oleh AI saat publikasi
+2. Ekspor jawaban AI menjadi draf dokumen baru
+
+## Urutan potong bila waktu habis
+
+Dipotong dari atas.
+
+1. Penyimpanan riwayat percakapan — chat tetap jalan, riwayatnya tidak tersimpan
+2. Form buat dan sunting di UI — dokumen masuk lewat seed
+3. Selektor ruang lingkup jawaban
+4. Filter selain kategori
+5. Daftar heading hierarkis menjadi datar
+
+## Tidak boleh dipotong
+
+- Filter izin di SQL dan test kebocorannya
+- Sitasi pada setiap jawaban
+- Jalur abstain
+- Penulisan `audit_log` untuk dokumen terbatas — ini persyaratan kepatuhan, bukan fitur
+- Log kueri — biayanya satu `INSERT`, dan tanpanya dashboard fase 2 tidak punya data
+- Dokumen sintetis
+- Deploy yang bisa diakses orang lain
+
+## Aturan yang tidak boleh dilanggar
+
+Seluruh konten dokumen bersifat sintetis dan fiktif. Tidak ada dokumen Telkom asli yang boleh masuk ke lingkungan mana pun yang terhubung API publik. Ini satu-satunya asumsi yang mahal kalau salah.

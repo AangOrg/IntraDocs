@@ -1,70 +1,49 @@
-# Task specs
+# Papan Task
 
-Satu task per branch. Satu branch per PR.
+Satu task satu branch `feat/T-0XX-slug`, satu PR, di bawah 400 baris diff. Spec ditulis paling lambat sehari sebelum dikerjakan.
 
-## Kenapa task ditulis sebagai spec, bukan sebagai judul
+Orang A memegang data, izin, dan retrieval. Orang B memegang antarmuka. Pembagian ini menjaga agar dua orang jarang menyentuh berkas yang sama.
 
-Kualitas kode yang dihasilkan agent AI hampir seluruhnya ditentukan oleh kualitas
-instruksinya. "Buatkan halaman upload" menghasilkan kode karangan. Spec dengan file yang
-disebutkan, acceptance criteria yang bisa diuji, dan batasan yang eksplisit menghasilkan
-kode yang bisa langsung di-review.
+## Sprint enam hari
 
-Menulis spec juga memaksa kita memikirkan masalahnya lebih dahulu — yang jauh lebih murah
-daripada menemukannya saat review.
+| Hari | Task | Orang | Keluaran |
+| --- | --- | --- | --- |
+| 1 | T-001 kerangka proyek dan deploy | A | Repo jalan, CI hijau, URL Vercel hidup |
+| 1 | T-002 design token dan `AppShell` responsif | B | Token dari mockup, shell menutup di ponsel |
+| 1 | T-003 skema sebelas tabel dan seed | A | Migrasi terpasang, lima pengguna, dua puluh dokumen contoh |
+| 2 | T-004 autentikasi akun lokal | A | Masuk dan keluar, sesi berisi role dan cakupan |
+| 2 | T-005 filter izin dan test kebocoran | A | `visibleDocumentsFilter` dan seluruh `tests/rbac/` hijau |
+| 2 | T-007 katalog dan filter kategori | B | Layar 3 jalan dengan data nyata |
+| 3 | T-006 viewer, daftar heading, form sunting | B | Layar 4 jalan, publikasi memicu embedding |
+| 3 | T-008 dokumen sintetis | B | Dua puluh sampai dua puluh lima berkas Markdown |
+| 3 | T-015 pemeriksaan konten sensitif | A | Peringatan pola kredensial saat publikasi |
+| 4 | T-009 hybrid search dan RRF | A | Identifier persis dan parafrase, keduanya tepat |
+| 4 | T-010 halaman hasil pencarian | B | Layar 2 jalan |
+| 5 | T-011 endpoint RAG, sitasi, abstain | A | SSE mengalir, sitasi menunjuk bagian dokumen |
+| 5 | T-012 halaman AI Assistant | B | Layar 9 jalan, percakapan berlanjut |
+| 6 | T-013 eval dan tuning | A | `pnpm eval` mencetak angka, kebocoran nol |
+| 6 | T-014 polish, README, skrip demo | B | Bisa didemokan tanpa penjelasan |
 
-## Format
+## Perubahan dari pemeriksaan mockup layar 9-11
 
-Setiap task punya bagian: **Tujuan**, **Konteks** (file yang perlu dibaca), **Lingkup**
-(dan yang di luar lingkup), **Acceptance criteria** (bisa dicentang), **Batasan**, dan
-**Cara menguji**.
+Rinciannya di `docs/mockup-alignment.md`. Tidak ada task baru yang besar; sebagian besar diserap task yang sudah ada.
 
-## Cara memakai bersama agent
+| Task | Yang bertambah | Kenapa sekarang |
+| --- | --- | --- |
+| T-002 | Sidebar menutup di bawah titik potong | Menyisipkan perilaku responsif ke enam halaman jadi jauh lebih mahal |
+| T-003 | `user.category_scope`, `user.is_active`, tabel `conversation` dan `message` | Skema menjadi sebelas tabel. Menambah dimensi izin setelah test hijau berarti menulis ulang test dan seed |
+| T-005 | `tests/rbac/category-scope.spec.ts` dan `inactive-user.spec.ts` | Ikut sekali jalan dengan test kebocoran |
+| T-009, T-010 | Satu baris log per kueri | Satu `INSERT`. Tanpanya dashboard fase 2 tidak punya data |
+| T-011 | Penulisan ulang pertanyaan lanjutan, parameter ruang lingkup | Pertanyaan lanjutan hampir pasti ditanyakan saat demo |
+| T-012 | Riwayat percakapan, selektor ruang lingkup, umpan balik jempol | Layar 9 adalah halaman inti, bukan pelengkap |
+| T-015 | Task baru, kecil | Persyaratan kepatuhan di layar 11, sekaligus pengaman terhadap aturan kita sendiri |
 
-1. Tempel `docs/context-pack.md` + `docs/scope-mvp.md` + file task ke agent.
-2. Minta agent membaca file yang disebut di **Konteks** sebelum menulis kode.
-3. Minta agent bekerja di branch `feat/T-00X-slug` lalu membuka PR.
-4. Review diff dengan model kelas atas, bukan dengan mata saja.
+## Hari yang paling menentukan
 
-## Papan task — sprint 6 hari
+**Hari 2.** Kalau filter izin belum benar dan test kebocoran belum hijau di akhir hari 2, jangan lanjut ke hari 3. Seluruh nilai produk ini bertumpu pada satu klausa `WHERE`, dan memperbaikinya setelah empat hari kode menumpuk di atasnya jauh lebih mahal.
 
-Disesuaikan dengan `docs/scope-mvp.md` dan ADR-0007.
+**Hari 5 adalah hari terpadat.** Endpoint RAG dan halaman chat dikerjakan bersamaan, dan keduanya bertambah isi setelah pemeriksaan mockup. Kalau hari 5 tersendat, yang dipotong adalah penyimpanan riwayat percakapan lebih dulu, bukan sitasi dan bukan jalur abstain. Urutan potong lengkap ada di `docs/scope-mvp.md`.
 
-| ID | Task | Hari | Pemilik | Status spec |
-| --- | --- | --- | --- | --- |
-| T-001 | Scaffold + Neon + deploy Vercel | 1 | A | ada — abaikan bagian Docker & CI berat |
-| T-002 | Design token + sprite ikon + `AppShell` | 1 | B | ada |
-| T-003 | Skema DB + migrasi + seed dasar | 1 | A | ada — **kurangi jadi 9 tabel**, lihat catatan |
-| T-004 | Auth akun lokal (seed user) | 2 | A | ada — **abaikan bagian invite** |
-| T-005 | RBAC + `visibleDocumentsFilter` + test kebocoran | 2 | A | ada — tanpa perubahan |
-| T-007 | Katalog + filter + sidebar (mockup s3) | 2 | B | ada |
-| T-006 | Viewer + TOC + editor Markdown (mockup s4) | 3 | B | ada |
-| T-008 | 20–25 dokumen sintetis | 3 | B | ada |
-| T-009 | Hybrid search FTS + pgvector + RRF | 4 | A | ditulis hari 3 |
-| T-010 | Halaman hasil pencarian (mockup s2) | 4 | B | ditulis hari 3 |
-| T-011 | Endpoint RAG + sitasi + abstain | 5 | A | ditulis hari 4 |
-| T-012 | UI chat + chip sitasi + state | 5 | B | ditulis hari 4 |
-| T-013 | Eval 10 pertanyaan + tuning | 6 | A | ditulis hari 5 |
-| T-014 | Polish, aksesibilitas, README, skrip demo | 6 | B | ditulis hari 5 |
+## Spec yang belum ditulis
 
-T-009 sampai T-014 ditulis satu hari sebelum dikerjakan, ketika bentuk kodenya sudah
-diketahui. Menulis semuanya sekarang menghasilkan spec yang harus dibuang.
-
-## Catatan penyesuaian scope
-
-Spec T-001 sampai T-008 ditulis untuk rencana empat minggu. Yang berubah:
-
-- **T-001** — lewati `Dockerfile`, `docker-compose`, dan job CI mingguan. Cukup
-  `typecheck → lint → test → build` di GitHub Actions. Tetap tegakkan aturan portabilitas
-  (tanpa Vercel Blob, tanpa Edge, tanpa filesystem lokal).
-- **T-003** — kurangi menjadi 9 tabel: `user`, `category`, `label`, `document`,
-  `document_label`, `document_version`, `chunk`, `audit_log`, `ai_query`.
-  **Dilewati:** `invite`, `job`, `review`, `document_grant`, `document_file`,
-  `document_view`. Semua kolom pada tabel yang dibuat tetap lengkap — termasuk
-  `embedding_model`, `content_hash`, `review_period_days`.
-- **T-004** — hanya credentials + `scripts/seed-admin.ts`. Alur invite dilewati; buat 5 user
-  lewat seed yang mencakup kombinasi role dan clearance.
-- **T-005** — tanpa perubahan. **Ini task yang paling tidak boleh dipercepat.**
-- **T-006** — tambahkan TOC hierarkis bernomor sesuai mockup s4. Lewati UI riwayat versi
-  (datanya tetap disimpan).
-- **T-008** — 20–25 dokumen cukup, tidak perlu 30. Semua `.md`. Tetap sertakan dokumen yang
-  saling mirip dan dokumen kedaluwarsa.
+T-009 sampai T-015 ditulis sehari sebelum dikerjakan. Menulis semuanya sekarang berarti menulis rencana untuk keadaan yang belum diketahui.
