@@ -1,44 +1,43 @@
-# Keadaan proyek
+# Keadaan Sekarang
 
-Berkas ini diperbarui **di akhir setiap hari sprint**. Ini berkas pertama yang dibaca asisten
-AI baru — lihat `docs/ai-handover.md`.
+Berkas ini berumur pendek dan sering berubah. Fakta proyek yang stabil ada di `docs/context-pack.md`; scope yang mengikat ada di `docs/scope-mvp.md`.
 
-Tulis singkat dan jujur. Berkas keadaan yang optimistis lebih buruk daripada tidak ada.
+Perbarui di akhir setiap hari sprint. Satu commit, dua menit.
 
----
-
-**Terakhir diperbarui:** 2026-09-04, 10:30 WIB
-**Hari sprint:** 1 dari 6 (target MVP: Jumat 11 September 2026)
+- **Terakhir diperbarui:** 4 September 2026, sore
+- **Hari sprint:** 1 dari 6
+- **Target MVP:** Jumat, 11 September 2026
 
 ## Sudah selesai
 
-- Mockup HTML dibaca seluruhnya, delapan screen dipetakan ke task (`docs/ui-inventory.md`)
-- Dokumen perencanaan lengkap: PRD, arsitektur, kontrak API, matriks RBAC, ADR 0001–0008
-- Scope dipotong ke sprint enam hari (ADR-0007), definisi selesai ada di `docs/scope-mvp.md`
-- Keputusan terbuka dijawab sendiri (`docs/decisions-open.md`)
-- Rencana lingkungan, CI/CD, dan alat agent ditulis (ADR-0008, `docs/environments.md`,
-  `docs/agent-tooling.md`)
+- Mockup dibaca utuh, sebelas layar, dipetakan ke task
+- Dokumen fondasi: PRD, arsitektur, matriks RBAC, kontrak API, spec task T-001 sampai T-008
+- ADR 0001 sampai 0010
+- Scope dipotong ke sprint enam hari lewat ADR-0007
+- Rencana lingkungan, CI/CD, dan protokol pindah akun AI
+- Pemeriksaan kesesuaian terhadap layar 9-11 mockup, lima temuan diperbaiki
 
 ## Sedang dikerjakan
 
-- PR #1 (`docs/foundation`) terbuka, menunggu review
+PR #1 terbuka dan menunggu review. Belum ada kode aplikasi.
 
 ## Berikutnya
 
-- T-001 scaffold + T-003 skema DB + seed (Orang A)
-- T-002 design token + `AppShell` (Orang B)
+PR scaffold: T-001 kerangka Next.js, T-002 design token dan `AppShell` responsif, T-003 skema sebelas tabel dengan seed.
 
-## Tertunda atau belum siap
+Perubahan yang harus ikut masuk ke PR scaffold:
 
-- Belum ada kode aplikasi — menunggu persetujuan PR #1
-- Akun Neon dengan pgvector belum dibuat
-- Kunci API provider AI belum disiapkan
-- Branch protection pada `main` belum diaktifkan
+- `user.category_scope` dan `user.is_active` pada skema (ADR-0009)
+- Tabel `conversation` dan `message` (ADR-0010)
+- Sidebar menutup di bawah titik potong pada `AppShell`
+- `docs/ui-inventory.md`, `docs/context-pack.md`, `docs/prd.md`, dan `docs/architecture.md` masih menyebut scope empat minggu dan delapan layar. Selaraskan di PR ini
 
-## Catatan untuk diri sendiri nanti
+## Menunggu atau rusak
 
-- Hari 2 (RBAC + test kebocoran) adalah hari terpenting. Jangan lanjut ke hari 3 kalau test
-  RBAC belum hijau.
-- Menulis 20–25 dokumen sintetis makan 4–6 jam. Mulai mencicil di hari 3, jangan ditumpuk.
-- Urutan potong kalau waktu habis ada di `docs/roadmap.md`. Ikuti daftarnya, jangan
-  berimprovisasi saat panik.
+- Akun Neon dengan pgvector — belum ada, penghambat T-003
+- Kunci API penyedia AI — belum ada, penghambat hari 5
+- Badan PR #1 masih menjelaskan empat commit pertama saja
+
+## Catatan
+
+Seluruh konten dokumen bersifat sintetis dan fiktif. Tidak ada dokumen Telkom asli yang boleh masuk ke lingkungan mana pun yang terhubung API publik.
