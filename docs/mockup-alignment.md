@@ -1,6 +1,6 @@
 # Kesesuaian Rencana dengan Mockup
 
-Diperiksa 4 September 2026, setelah layar 9-11 dibaca utuh. Berkas ini adalah matriks keterlacakan antara mockup dan rencana MVP, sekaligus daftar koreksi yang keluar dari pemeriksaan itu.
+Diperiksa 4 September 2026, setelah layar 9-11 dibaca utuh. Layar 1-8 ditambahkan 5 September 2026; bagian "Layar 1-8" menjelaskan dasar pemeriksaannya. Berkas ini adalah matriks keterlacakan antara mockup dan rencana MVP, sekaligus daftar koreksi yang keluar dari pemeriksaan itu.
 
 ## Koreksi inventaris
 
@@ -10,9 +10,107 @@ Diperiksa 4 September 2026, setelah layar 9-11 dibaca utuh. Berkas ini adalah ma
 | 6 role | **5 role bawaan + kemampuan membuat role kustom.** Judul layar 8 menulis "6 role", tetapi kartu yang ada lima |
 | Izin satu dimensi (role + clearance) | **Dua dimensi:** role menentukan *apa*, cakupan kategori menentukan *di mana* |
 
-`docs/ui-inventory.md` masih menyebut 8 layar. Layar 9-11 didokumentasikan di berkas ini; keduanya disatukan pada PR scaffold.
+`docs/ui-inventory.md` sudah memuat kesebelas layar beserta rutenya, jadi berkas ini tidak lagi perlu menambalnya. Yang tinggal di sini adalah alasan dan keputusannya, bukan daftar layarnya.
 
 Angka pada mockup tidak konsisten satu sama lain (jumlah pengguna per role berjumlah 312, header menulis 318 aktif). Ini menegaskan aturan yang sudah ada: seluruh angka pada mockup adalah pengisi tempat dan tidak boleh ditampilkan sebagai fakta.
+
+## Layar 1-8
+
+Pemeriksaan ini menyusul, dan menutup lubang yang disebut ADR-0011: sampai 4 September berkas ini hanya mencakup layar 9-11, sehingga pertentangan paling serius — pil "Terbatas - akses via permintaan" di layar 2 — tidak pernah tercatat di mana pun.
+
+Dasar pemeriksaan: `docs/ui-inventory.md` (rute, status, dan istilah UI per layar), ADR-0011 (layar 2), `docs/scope-mvp.md` (urutan potong dan daftar "tidak masuk MVP"), `docs/rbac-matrix.md` (layar 8), `docs/api-contract.md`, dan T-003 (daftar tabel yang tidak dibuat).
+
+Baris bertanda **[belum diverifikasi]** adalah elemen yang belum dibaca ulang langsung dari `intradocs-mockup_1.html` pada pemeriksaan ini. `AGENTS.md` melarang membuka berkas itu utuh dan meminta pembacaan per rentang baris; verifikasinya menyusul saat layar itu benar-benar dibangun. Keputusannya tetap berlaku — yang belum pasti adalah kelengkapan daftar elemennya, bukan arah keputusannya.
+
+### Layar 1 — Halaman Muka (`/`)
+
+| Elemen | Status MVP |
+| --- | --- |
+| Pencarian besar di tengah halaman | Masuk |
+| Kartu kategori | Masuk — enam kategori, satu tingkat |
+| **Chip topik populer** | **Ditunda.** Sumbernya agregasi log pencarian, dan log baru mulai terisi hari 4. Chip yang diisi manual berarti menampilkan topik karangan, dan itu melanggar aturan "angka dan isi di aplikasi selalu dihitung dari basis data" |
+| Penghitung "1.284 dokumen · 318 pengguna" | **Tidak ditampilkan dengan angka mockup.** Kalau ditampilkan, dihitung dari basis data. Angka mockup pengisi tempat dan saling bertentangan |
+| Dokumen terbaru | Masuk — turunan `updated_at` |
+| Dokumen paling banyak dibaca | **Ditunda** — butuh `document_view`, tabel yang sengaja tidak dibuat di MVP (lihat daftar larangan T-003) |
+| Tautan cepat ke AI Assistant | Masuk |
+
+Dua peringkat di layar ini ("topik populer" dan "paling banyak dibaca") adalah data turunan tanpa sumber di MVP. Ini temuan 5 yang muncul lagi di tempat lain: pencatatan log yang dimulai hari 4 baru berguna beberapa hari kemudian, dan peringkat dari korpus 20-25 dokumen sintetis tidak berarti apa-apa. Halaman muka MVP karena itu lebih sepi daripada mockup, dan itu keputusan.
+
+### Layar 2 — Hasil Pencarian (`/cari`)
+
+Satu-satunya layar yang isinya bertentangan **langsung** dengan aturan kita, bukan sekadar lebih kaya. Keduanya kini punya keputusan tertulis.
+
+| Elemen | Status MVP |
+| --- | --- |
+| Daftar hasil dengan snippet tersorot | Masuk |
+| Pil "Terbatas - akses via permintaan" pada dokumen di luar izin | **Tidak dibangun** — ADR-0011. Dokumen di luar izin tidak muncul sama sekali, termasuk judulnya |
+| Jumlah hasil ("41 hasil") | Masuk, tetapi **dihitung setelah filter izin** (ADR-0011). Angka 41 sendiri pengisi tempat |
+| Kotak `.ai-answer` di atas daftar hasil | **Tidak dibangun di halaman pencarian** — lihat alasan di bawah |
+| Filter di sisi kiri | Sebagian — kategori saja; filter lain adalah potongan #4 |
+| Tombol menuju AI Assistant dengan kueri terbawa | Masuk — ini penggantinya kotak `.ai-answer` |
+
+**Kenapa kotak `.ai-answer` tidak dibangun di layar 2.** `docs/api-contract.md` menetapkan pencarian tidak boleh memanggil provider AI, supaya pencarian tetap hidup ketika AI mati atau kuota habis. Menempelkan jawaban AI di halaman hasil berarti dua jalur jawaban dengan dua tempat sitasi, dua tempat jalur abstain, dan dua tempat yang harus diuji kebocorannya — pada minggu yang tujuan utamanya membuktikan satu jalur AI bekerja rapat. Jawaban AI karena itu hanya ada di layar 9, dan layar 2 menautkan ke sana dengan kueri terbawa. Biaya menyatukannya nanti kecil: komponennya sama.
+
+### Layar 3 — Katalog Dokumen (`/katalog`) **[belum diverifikasi]**
+
+| Elemen | Status MVP |
+| --- | --- |
+| Daftar/grid dokumen dengan badge klasifikasi dan status | Masuk |
+| Filter kategori | Masuk |
+| Filter label, klasifikasi, rentang tanggal | Potongan #4 — dilepas kalau waktu habis |
+| Penanda kedaluwarsa dan "Terverifikasi" | Masuk — turunan `updated_at` + `review_period_days` |
+| Pengurutan "paling banyak dibaca" | Ditunda — `document_view` tidak dibuat |
+| Jumlah dokumen per kategori | Masuk, dihitung setelah filter izin (ADR-0011) |
+
+### Layar 4 — Baca Dokumen (`/{kategori}/{slug}`)
+
+| Elemen | Status MVP |
+| --- | --- |
+| Isi Markdown terender, dibersihkan `rehype-sanitize` | Masuk |
+| `DocNav` daftar heading | Masuk — tampilan satu tingkat (potongan #5), tetapi `chunk.heading_path` tetap penuh |
+| Sitasi "Bagian 2.1.2" dan tautan balik dari jawaban AI | Masuk — bergantung pada `heading_path`, ada di daftar "tidak boleh dipotong" |
+| Badge "Terverifikasi" dan peringatan tinjau ulang | Masuk |
+| Tombol "Tanya AI tentang halaman ini" | Masuk sebagai navigasi ke `/ai-assistant` dengan pertanyaan awal terisi. Parameter ruang lingkup jawaban adalah potongan #3 |
+| Riwayat versi di UI | Fase 2 — tabel `document_version` sudah ada sejak MVP |
+| Unduh berkas asli | Fase 2 — tanpa object storage tidak ada berkas asli |
+| Pencatatan `audit_log` saat membaca `restricted`/`secret` | Masuk — persyaratan kepatuhan |
+
+### Layar 5 — Unggah Knowledge (`/unggah`)
+
+| Elemen | Status MVP |
+| --- | --- |
+| **Wizard empat langkah** | **Tidak dibangun.** MVP memakai satu form sederhana, dan form itu sendiri potongan #2 — dokumen MVP masuk lewat `pnpm seed`. Wizard empat langkah baru masuk akal setelah ekstraksi berkas dan approval ada, dan keduanya Fase 2 |
+| Unggah PDF, Word, Excel, PPT, hasil pindaian | Fase 2 — lihat bagian "Upload & ingest" di `docs/api-contract.md`, seluruhnya bertanda Fase 2 |
+| Panel `.ai-extract` — usulan ringkasan, kategori, label oleh AI | Tambahan opsional, hanya kalau daftar wajib sudah selesai |
+| Pemindaian konten sensitif sebelum publikasi | Masuk — temuan 4 di bawah |
+| Pratinjau Markdown | Masuk kalau form dibangun |
+
+Urutan langkah pada wizard tetap dicatat di sini karena ia menggambarkan alur knowledge tujuh langkah versi ringkas, dan alur itu yang jadi acuan Fase 2 — bukan karena MVP akan membangunnya.
+
+### Layar 6 — Approval Admin (`/admin/approval`) **[belum diverifikasi]**
+
+Fase 2 seluruhnya. Tabel `review` tidak dibuat di MVP, dan alur MVP hanya `draft` → `published`. Nilai `in_review` dan `archived` tetap ada di enum `DocStatus` supaya approval Fase 2 tidak butuh migrasi. Approval berjenjang ada di fase 2 roadmap mockup sendiri, jadi ini bukan penyimpangan.
+
+### Layar 7 — Kategori & Label (`/admin/kategori-label`) **[belum diverifikasi]**
+
+UI Fase 2. Datanya sudah dibangun penuh di MVP: `category` satu tingkat dengan kolom `parent_id` yang sudah ada, `label` dengan relasi banyak-ke-banyak lewat `document_label`. Enam kategori dan seluruh label masuk lewat seed. Konsekuensinya untuk demo: kategori dan label tidak bisa diubah dari UI, hanya lewat seed.
+
+### Layar 8 — Pengguna & RBAC (`/admin/pengguna`)
+
+Layar ini sudah menjadi sumber utama `docs/rbac-matrix.md` pada pemeriksaan pertama, jadi yang dicatat di sini hanya perubahan sesudahnya:
+
+- **Tidak ada kolom clearance per pengguna.** Klasifikasi tertinggi diturunkan dari `role`; dua sumber kebenaran untuk satu aturan visibilitas dilarang ADR-0004.
+- **Cakupan kategori** adalah dimensi kedua izin, dan itulah yang membuat contoh mockup sendiri ("Reviewer Keamanan tidak dapat menyetujui dokumen Aplikasi Internal") bisa benar (ADR-0009).
+- **Enam pengguna seed, bukan lima**, termasuk satu pengguna nonaktif sebagai prasyarat `tests/rbac/inactive-user.spec.ts`.
+- UI-nya ditunda, modelnya tidak. Layar ini yang menentukan bentuk tabel `user`.
+
+### Tiga temuan baru dari layar 1-8
+
+Yang keempat — pil "Terbatas" di layar 2 — sudah menjadi ADR-0011 dan tidak diulang di sini.
+
+1. **Dua peringkat di layar 1 tidak punya sumber data di MVP.** "Topik populer" butuh log pencarian yang baru terisi hari 4; "paling banyak dibaca" butuh `document_view` yang tidak dibuat. Keduanya ditunda, bukan diisi angka karangan. Ini temuan 5 yang berulang.
+2. **Kotak `.ai-answer` di layar 2 melanggar batasan "pencarian tanpa AI".** Diselesaikan dengan menautkan ke layar 9, bukan dengan menduplikasi jalur jawaban.
+3. **Wizard empat langkah layar 5 melampaui MVP pada semua sisinya** — ekstraksi berkas, usulan metadata AI, dan approval semuanya Fase 2. Keputusan lama (form sederhana, dokumen lewat seed) tetap, tetapi sekarang tercatat sebagai perbedaan yang sadar, bukan kelalaian.
 
 ## Layar 9 — AI Assistant
 
@@ -20,14 +118,14 @@ Layar ini adalah halaman penuh di `/ai-assistant`, bukan sekadar kotak jawaban d
 
 | Elemen | Status MVP |
 | --- | --- |
-| Riwayat percakapan di sisi kiri | Masuk — dua tabel kecil, lihat ADR-0010 |
+| Riwayat percakapan di sisi kiri | Masuk — dua tabel kecil, lihat ADR-0010. Endpoint `GET /api/ai/conversations`, potongan #1 |
 | Pertanyaan lanjutan yang tidak berdiri sendiri | **Masuk** — sebelumnya terlewat, lihat ADR-0010 |
 | Pil "Jawaban dibatasi hak akses Anda" | Masuk — teks statis, gratis, dan justru inti pesan produk |
 | Panel "Sumber jawaban — 3 dokumen" | Masuk |
 | Sitasi dengan lokasi presisi (bagian, halaman, versi) | Sebagian — `heading_path` memberi nama bagian dan versi. Nomor halaman butuh PDF, ditunda |
-| Ruang lingkup jawaban: seluruh KB / kategori tertentu / dokumen yang dibuka | Masuk — parameter opsional pada endpoint, dipakai juga oleh tombol "Tanya AI tentang halaman ini" di layar 4 |
+| Ruang lingkup jawaban: seluruh KB / kategori tertentu / dokumen yang dibuka | **Potongan #3** — tombol "Tanya AI tentang halaman ini" di layar 4 cukup mengisi pertanyaan awal. Menambahkannya nanti adalah satu field opsional pada `POST /api/ai/ask` |
 | Umpan balik jempol atas/bawah | Masuk — satu kolom pada `ai_query` |
-| "Dijawab dalam 2,4 detik · 3 dokumen dirujuk" | Masuk — kita sudah mengukur latensi |
+| "Dijawab dalam 2,4 detik · 3 dokumen dirujuk" | Masuk — kita sudah mengukur latensi. Angkanya dari pengukuran, bukan dari mockup |
 | Chip pertanyaan lanjutan | Ditunda — hiasan, bukan kemampuan |
 | "Ekspor jawaban" menjadi dokumen baru | Peluang tambahan, lihat bagian akhir |
 | "Lampirkan dokumen" pada kotak chat | Ditunda bersama unggah multi-format |
@@ -67,7 +165,7 @@ Catatan mockup menyebut kesenjangan knowledge sebagai pembeda strategis produk: 
 | Mesin Approval (Workflow) | Ditunda ke fase 2 | Ditunda, sesuai roadmap mockup sendiri |
 | Layanan RBAC | `lib/rbac/visible-documents.ts` | Ya |
 | Layanan Pencarian | tsvector di Postgres | Disederhanakan |
-| Layanan RAG | `app/api/chat` | Ya |
+| Layanan RAG | `POST /api/ai/ask` (`app/api/ai/ask/route.ts`) | Ya |
 | Pemroses Berkas & OCR | Ditunda | Ditunda, sadar |
 | Notifikasi | Ditunda | Ditunda |
 | PostgreSQL (metadata & RBAC) | Sama persis | Ya |
@@ -75,6 +173,8 @@ Catatan mockup menyebut kesenjangan knowledge sebagai pembeda strategis produk: 
 | Vector DB (embedding) | pgvector di Postgres yang sama | **Disederhanakan sengaja** |
 | Search Index | tsvector di Postgres yang sama | **Disederhanakan sengaja** |
 | Audit Log | Tabel `audit_log` | Ya |
+
+Baris Layanan RAG sebelumnya menulis `app/api/chat`, yang bertentangan dengan `POST /api/ai/ask` di `docs/api-contract.md`. Nama resminya `POST /api/ai/ask`; `chat()` adalah nama fungsi pada `lib/ai/provider.ts`, bukan rute. Alasan lengkapnya ada di bagian "Satu nama untuk endpoint AI" pada `docs/api-contract.md`.
 
 Dua penyederhanaan yang perlu dijelaskan terbuka: mockup menggambar Vector DB dan Search Index sebagai komponen tersendiri, kita menaruh keduanya di dalam PostgreSQL lewat pgvector dan tsvector. Pada skala yang ditunjukkan mockup sendiri (1.284 dokumen) dan target kita (10.000 dokumen), komponen terpisah menambah dua sistem untuk dirawat tanpa menambah kemampuan. Batas wajarnya ada di ADR-0001, dan pemisahannya adalah perubahan lokal karena antarmuka retrieval sudah dipisah.
 
@@ -84,15 +184,15 @@ Callout keamanan mockup meminta opsi model AI lokal untuk dokumen berklasifikasi
 
 | Langkah | Status MVP |
 | --- | --- |
-| 1. Unggah berkas (PDF, Word, MD, Excel, PPT, pindaian) | Sebagian — hanya `.md` dan `.txt` |
+| 1. Unggah berkas (PDF, Word, MD, Excel, PPT, pindaian) | Sebagian — hanya `.md` dan `.txt`, dan masuk lewat seed |
 | 2. Ekstraksi & normalisasi, OCR | Tidak perlu untuk Markdown; OCR ditunda |
-| 3. Pengayaan metadata oleh AI | Ditunda; kandidat tambahan opsional |
+| 3. Pengayaan metadata oleh AI | Ditunda; kandidat tambahan opsional — panel `.ai-extract` layar 5 |
 | 4. Review & approval satu atau dua tahap | Ditunda — hanya `draft` ke `published` |
 | 5. Publikasi & pengindeksan | **Masuk** — embed serentak saat publish |
 | 6. Konsumsi: pencarian, pembacaan, tanya jawab bersitasi | **Masuk, inti MVP** |
 | 7. Pemeliharaan berkala | Sebagian — penanda kedaluwarsa masuk, pengingat otomatis ditunda |
 
-MVP kita memotong lebar pada langkah 1 sampai 4 dan mengerjakan langkah 5 dan 6 secara utuh.
+MVP kita memotong lebar pada langkah 1 sampai 4 dan mengerjakan langkah 5 dan 6 secara utuh. Layar 5 adalah tampilan langkah 1 sampai 4, dan itu sebabnya layar itu yang paling jauh berbeda dari mockup.
 
 ### Empat fase mockup versus sprint kita
 
@@ -102,7 +202,7 @@ Sprint enam hari kita **bukan fase 1 yang dipercepat.** Ia adalah irisan vertika
 
 Alasannya perlu dinyatakan, karena ini keputusan yang paling mudah disalahpahami: fase 1 hampir tidak punya risiko teknis. CRUD dokumen, kategori, dan pencarian kata kunci adalah pekerjaan yang hasilnya bisa diprediksi. Seluruh risiko proyek ini menumpuk di fase 3 — apakah jawaban AI berbahasa Indonesia cukup kredibel, dan apakah izin tetap rapat ketika dokumen mengalir melalui LLM. Mengerjakan enam bulan fondasi lebih dulu berarti menemukan jawaban pertanyaan itu di bulan kelima.
 
-Irisan vertikal menjawabnya di hari keenam. Kalau jawabannya buruk, yang hilang enam hari, bukan lima bulan.
+Irisan vertikal menjawabnya di hari kerja keenam. Kalau jawabannya buruk, yang hilang enam hari, bukan lima bulan.
 
 Konsekuensinya jujur: MVP kita lebih dangkal dari fase 1 pada sisi ingest, dan lebih dalam dari fase 3 pada sisi AI. Perbandingan yang adil bukan "berapa persen fase 1 selesai", melainkan "apakah premis produk terbukti".
 
@@ -121,7 +221,7 @@ Empat aspek keamanan, dan status kita:
 
 ## Lima temuan yang mengubah rencana
 
-Diurutkan menurut selisih biaya antara mengerjakannya hari ini dan mengerjakannya nanti.
+Diurutkan menurut selisih biaya antara mengerjakannya hari ini dan mengerjakannya nanti. Temuan ini lahir dari layar 9-11; temuan dari layar 1-8 ada di bagian "Tiga temuan baru dari layar 1-8" di atas.
 
 ### 1. Izin dua dimensi — cakupan kategori
 
@@ -151,7 +251,7 @@ Alasannya bukan kelengkapan fitur. Seluruh premis produk ini adalah kredibilitas
 
 ### 5. Pencatatan kueri sejak hari pertama
 
-Lihat layar 10 di atas. Satu `INSERT` per kueri sekarang, atau dashboard yang tidak punya data untuk ditampilkan nanti.
+Lihat layar 10 di atas. Satu `INSERT` per kueri sekarang, atau dashboard yang tidak punya data untuk ditampilkan nanti. Layar 1 menambah alasan kedua: chip topik populer dan peringkat "paling banyak dibaca" juga berdiri di atas log yang sama.
 
 ## Perbedaan yang dipertahankan, dan alasannya
 
@@ -167,7 +267,7 @@ Tujuh perbedaan berikut sengaja tidak diubah. Semuanya perlu dijawab kalau ditan
 | Unggah multi-format dan OCR | Waktunya habis di penanganan format, bukan di hal yang membuktikan premis |
 | Kategori tiga tingkat | MVP satu tingkat. Kolom induk sudah ada di skema supaya tidak perlu migrasi |
 
-## Dua kandidat tambahan, hanya kalau hari 1-4 selesai tepat waktu
+## Dua kandidat tambahan, hanya kalau daftar wajib sudah selesai
 
 Keduanya berbiaya kecil dengan kesan besar, dan keduanya ada di mockup. Statusnya tambahan, bukan bagian MVP, dan tidak boleh menyingkirkan pekerjaan pada daftar wajib.
 
@@ -184,3 +284,5 @@ Menyebut batas sendiri lebih dipercaya daripada menunggu ditemukan.
 4. Tanpa SSO. Menunggu akses direktori.
 5. Tanpa approval berjenjang. Fase 2 pada roadmap usulan itu sendiri.
 6. Angka kualitas yang ditampilkan berasal dari `pnpm eval` atas sepuluh pertanyaan, bukan dari klaim. Angka mockup seperti "96% akurasi AI" adalah pengisi tempat dan tidak akan ditampilkan.
+7. Layar 2 kita lebih sederhana daripada mockup: tanpa kotak jawaban AI, dan tanpa pil "Terbatas - akses via permintaan". Yang kedua adalah keputusan keamanan, bukan pekerjaan yang belum selesai — sebut ADR-0011 kalau ditanya.
+8. Halaman muka tanpa chip topik populer dan tanpa peringkat "paling banyak dibaca". Keduanya butuh data pemakaian yang belum ada, dan kami memilih tidak mengarang angka.
