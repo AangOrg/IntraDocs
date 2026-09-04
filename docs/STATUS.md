@@ -1,6 +1,6 @@
 # STATUS
 
-Diperbarui: hari 1 sprint, siang. Fondasi perencanaan sudah masuk `main`.
+Diperbarui: hari 1 sprint, sore. Fondasi perencanaan sudah masuk `main`.
 
 ## Keadaan
 
@@ -33,12 +33,19 @@ Urutan yang tidak boleh dibalik ada di `docs/eksekusi.md`.
 
 ## Butuh dari pemilik repo
 
-1. **Akun Neon** dengan `pgvector` aktif, lalu `DATABASE_URL` ditaruh di `.env.local` dan di pengaturan environment Vercel. Sekitar 5 menit. **Memblokir T-003.**
-2. **API key penyedia AI** untuk embedding dan generasi. Sekitar 5 menit. Memblokir T-009 dan seterusnya, belum dibutuhkan hari 1.
+Panduan langkah demi langkah ada di **`docs/setup-infra.md`**. Ringkasnya:
+
+1. **Akun Neon**, region Singapore, ekstensi `vector` aktif. **Memblokir T-003.**
+2. **API key penyedia AI**. Memblokir T-009 dan seterusnya, belum dibutuhkan hari 1.
+3. **Project Vercel** dengan region fungsi Singapore dan env var terisi untuk Production dan Preview.
+
+Region Neon dan region fungsi Vercel harus sama. Kalau berbeda, target p95 tidak akan tercapai dan memperbaikinya butuh membuat project Neon baru.
 
 ## Catatan
 
 Hari 5 (T-011 + T-012) adalah hari terberat dan keduanya ada di jalur paling berisiko. Kalau tersendat, yang dipotong pertama adalah penyimpanan riwayat percakapan — chat tetap berfungsi, riwayatnya saja yang tidak tersimpan. Urutan potong lengkap ada di `docs/scope-mvp.md`.
+
+Batas durasi fungsi Vercel hanya terlihat setelah dideploy, tidak di localhost. Uji satu jawaban panjang di preview pada hari 5 — lihat `docs/setup-infra.md`.
 
 ## Cara memperbarui berkas ini
 
