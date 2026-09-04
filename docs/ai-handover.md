@@ -1,79 +1,72 @@
-# Melanjutkan proyek di chat, akun, atau workspace lain
+# Serah terima ke chat AI lain
 
-Riwayat percakapan **tidak bisa dipindahkan** antar akun atau workspace. Kalau kuota chat
-habis, atau berpindah perangkat, atau asistennya lupa konteks di tengah jalan, seluruh
-konteks percakapan hilang.
+Dipakai saat pindah chat, pindah akun, atau kuota habis. Ada dua prompt — pakai yang sesuai.
 
-Karena itu satu prinsip berlaku sejak awal:
+## Prompt A — memulai satu task (yang paling sering dipakai)
 
-> **Keadaan proyek disimpan di repo, tidak di dalam percakapan.**
+Ini prompt normal untuk setiap sesi eksekusi. Ganti nomor task-nya.
 
-Kalau prinsip ini dipegang, berpindah akun butuh dua menit. Kalau tidak, berpindah akun
-berarti menjelaskan ulang seluruh proyek dari nol — dan asisten yang baru akan mengarang
-asumsi yang bertentangan dengan keputusan yang sudah diambil.
+```
+Repo: https://github.com/AangOrg/IntraDocs
+Saya mau kamu mengerjakan satu task saja: T-0XX.
 
-## Apa yang hilang dan apa yang tidak
+Baca hanya empat berkas ini, dengan urutan ini:
+1. docs/STATUS.md
+2. AGENTS.md
+3. docs/context-pack.md
+4. docs/tasks/T-0XX-*.md
 
-| Hilang saat pindah | Tidak hilang |
-| --- | --- |
-| Riwayat percakapan | Semua berkas di repo |
-| Halaman Notion di workspace lama | ADR dan alasan di baliknya |
-| Koneksi GitHub (harus disambungkan ulang) | Keadaan harian di `docs/STATUS.md` |
-| Konteks implisit yang tidak pernah dituliskan | Spec task dan acceptance criteria |
+Jangan membaca berkas lain kecuali spec task itu menyebutnya.
+Jangan membuka intradocs-mockup_1.html secara utuh.
 
-Kolom kiri adalah yang tidak boleh dijadikan tempat menyimpan apa pun yang penting.
+Setelah membaca, sebelum menulis kode, balas dengan:
+- rencana perubahan dalam maksimal 10 baris
+- daftar berkas yang akan kamu sentuh
+- apa yang belum jelas
 
-## Prosedur pindah
+Tunggu konfirmasi saya. Setelah selesai: buka PR, perbarui docs/STATUS.md di PR
+yang sama, lalu berhenti. Jangan lanjut ke task berikutnya.
+```
 
-1. Buka Notion dengan akun atau workspace yang baru.
-2. Sambungkan GitHub pada akun tersebut, dengan akses ke `AangOrg/IntraDocs`.
-3. Tempel **prompt bootstrap** di bawah ini ke chat baru.
-4. Biarkan asisten membaca berkasnya dan meringkas keadaan. **Periksa ringkasannya** — kalau
-   ringkasannya salah, berkas keadaannya yang perlu diperbaiki, bukan diteruskan begitu saja.
-5. Lanjutkan bekerja.
+## Prompt B — pindah akun atau kuota habis
 
-## Prompt bootstrap — tempel apa adanya
+Dipakai kalau konteks percakapan hilang sepenuhnya dan orang barunya belum tahu proyek ini.
 
 ```
 Kamu melanjutkan proyek yang sudah berjalan. Jangan menulis kode sebelum membaca.
 
 Repo: https://github.com/AangOrg/IntraDocs
-Proyek: IntraDocs, web dokumentasi internal dengan RBAC dan AI chat bersitasi.
-Konteks: tugas magang, dua orang, dikerjakan dengan bantuan agent AI.
-Target MVP: Jumat 11 September 2026.
+Proyek: IntraDocs — web dokumentasi internal dengan RBAC dan AI chat bersitasi.
+Konteks: tugas magang 2 orang, dikerjakan dengan bantuan agent AI, MVP ditargetkan selesai
+dalam enam hari kerja sejak sprint dimulai.
 
-Baca berkas berikut dari repo, dengan urutan ini:
-1. docs/STATUS.md       - keadaan hari ini dan task yang sedang berjalan
-2. docs/context-pack.md - fakta proyek yang stabil
-3. docs/scope-mvp.md    - apa yang masuk MVP dan apa yang tidak; berkas ini mengikat
-4. AGENTS.md            - aturan menulis kode di repo ini
-5. docs/adr/README.md   - indeks keputusan; baca ADR yang relevan dengan task berjalan
+Baca berkas ini dengan urutan ini, dan hanya ini:
+1. docs/STATUS.md        — keadaan hari ini
+2. docs/context-pack.md  — fakta stabil dan nama identifier
+3. docs/scope-mvp.md     — apa yang masuk MVP dan apa yang tidak (mengikat)
+4. AGENTS.md             — aturan menulis kode
+5. docs/eksekusi.md      — protokol satu task satu sesi
+6. docs/adr/README.md    — indeks keputusan, baca ADR hanya bila disebut spec
+
+Jangan membaca seluruh folder docs/. Itu akan menurunkan kualitas kerjamu.
 
 Batasan yang tidak boleh dilanggar:
-- Jangan pernah push ke main. Satu task satu branch feat/T-00X-slug, lalu buka PR.
-- Jangan pernah merge PR atau menghapus branch tanpa permintaan eksplisit dari saya.
-- Filter izin selalu di SQL lewat visibleDocumentsFilter, tidak pernah di dalam prompt LLM.
-- Seluruh isi dokumen bersifat sintetis. Jangan pernah memakai data Telkom yang asli.
-- Bahasa Indonesia untuk teks UI dan dokumen. Bahasa Inggris untuk identifier kode dan
-  commit message.
-- Kalau sebuah keputusan sudah tercatat di ADR, ikuti. Kalau menurutmu keputusan itu salah,
-  katakan sebelum menulis kode, jangan diam-diam menyimpang.
+- Jangan pernah push ke main. Satu task satu branch feat/T-0XX-slug, lalu PR.
+- Jangan merge PR atau menghapus branch tanpa saya minta eksplisit.
+- Filter izin selalu di SQL lewat visibleDocumentsFilter, tidak pernah di prompt LLM.
+- Seluruh konten dokumen bersifat sintetis. Jangan pernah memakai data Telkom asli.
+- Bahasa Indonesia untuk teks UI dan dokumen, bahasa Inggris untuk identifier dan commit.
 
-Setelah membaca, ringkas dalam lima baris: hari sprint keberapa, apa yang sudah selesai, apa
-task berikutnya, apa yang sedang rusak atau tertunda, dan apa yang kamu butuhkan dari saya.
-Tunggu konfirmasi saya sebelum mulai menulis kode.
+Setelah membaca, ringkas dalam 5 baris: hari sprint keberapa, apa yang sudah jadi, apa task
+berikutnya, dan apa yang kamu butuhkan dari saya. Tunggu konfirmasi sebelum menulis kode.
 ```
 
-## Kewajiban harian — satu-satunya yang membuat ini berhasil
+## Yang harus ikut pindah bersama prompt
 
-Di akhir setiap hari sprint, perbarui `docs/STATUS.md` dan commit. Butuh dua menit.
+Tidak ada. Itu memang tujuannya. Semua yang dibutuhkan ada di repo.
 
-```bash
-git add docs/STATUS.md && git commit -m "docs: update status hari N" && git push
-```
+Kalau ada keputusan penting yang diambil di dalam chat dan belum masuk repo, tuliskan dulu sebelum pindah — sebagai ADR baru kalau itu keputusan teknis, atau sebagai baris di `docs/STATUS.md` kalau itu keadaan sementara.
 
-Ini terlihat seperti formalitas sampai suatu saat kuota habis di tengah hari 4. Setelah itu,
-ini terasa seperti dua menit terbaik yang pernah dipakai di proyek ini.
+## Kredensial
 
-Aturan praktisnya: **kalau sebuah informasi hanya ada di dalam chat, informasi itu belum
-ada.** Keputusan masuk ke ADR, keadaan masuk ke `STATUS.md`, rencana masuk ke `scope-mvp.md`.
+Jangan pernah menempel `DATABASE_URL`, API key, atau secret apa pun ke dalam chat. Simpan di `.env.local` di mesin lokal dan di pengaturan environment Vercel. Repo hanya berisi `.env.example` dengan nama variabel dan nilai kosong.

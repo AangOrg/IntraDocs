@@ -1,43 +1,37 @@
-# Keadaan Sekarang
+# STATUS
 
-Berkas ini berumur pendek dan sering berubah. Fakta proyek yang stabil ada di `docs/context-pack.md`; scope yang mengikat ada di `docs/scope-mvp.md`.
+Diperbarui: hari 1 sprint, siang.
 
-Perbarui di akhir setiap hari sprint. Satu commit, dua menit.
+## Keadaan
 
-- **Terakhir diperbarui:** 4 September 2026, sore
-- **Hari sprint:** 1 dari 6
-- **Target MVP:** Jumat, 11 September 2026
+**Perencanaan selesai dan dibekukan.** Semua dokumen di repo sudah konsisten satu sama lain setelah pemeriksaan menyeluruh terhadap 11 layar mockup. Tidak ada lagi dokumen yang menjelaskan ruang lingkup lama.
 
-## Sudah selesai
+Belum ada kode aplikasi sama sekali. PR #1 berisi seluruh fondasi perencanaan dan masih menunggu review.
 
-- Mockup dibaca utuh, sebelas layar, dipetakan ke task
-- Dokumen fondasi: PRD, arsitektur, matriks RBAC, kontrak API, spec task T-001 sampai T-008
-- ADR 0001 sampai 0010
-- Scope dipotong ke sprint enam hari lewat ADR-0007
-- Rencana lingkungan, CI/CD, dan protokol pindah akun AI
-- Pemeriksaan kesesuaian terhadap layar 9-11 mockup, lima temuan diperbaiki
+## Task berikutnya
 
-## Sedang dikerjakan
+Hari 1 — tiga task, boleh dibagi dua orang:
 
-PR #1 terbuka dan menunggu review. Belum ada kode aplikasi.
+- **T-001** scaffold Next.js + CI + deploy Vercel (orang A)
+- **T-002** token desain + AppShell responsif (orang B)
+- **T-003** skema 11 tabel + migrasi + seed (orang A, setelah T-001)
 
-## Berikutnya
+Urutan yang tidak boleh dibalik ada di `docs/eksekusi.md`.
 
-PR scaffold: T-001 kerangka Next.js, T-002 design token dan `AppShell` responsif, T-003 skema sebelas tabel dengan seed.
+## Yang harus ikut sejak hari 1, jangan sampai terlewat
 
-Perubahan yang harus ikut masuk ke PR scaffold:
+- `user.category_scope` dan `user.is_active` di skema (ADR-0009)
+- Tabel `conversation` dan `message` (ADR-0010) — total 11 tabel, bukan 9
+- Sidebar responsif di `AppShell` sejak awal, bukan ditambal belakangan
+- Seed berisi satu reviewer bercakupan sempit dan satu pengguna nonaktif
+- `AI_MAX_CLASSIFICATION=secret` di `.env.example` — nilai `public` akan mematikan demo tanpa terlihat
 
-- `user.category_scope` dan `user.is_active` pada skema (ADR-0009)
-- Tabel `conversation` dan `message` (ADR-0010)
-- Sidebar menutup di bawah titik potong pada `AppShell`
-- `docs/ui-inventory.md`, `docs/context-pack.md`, `docs/prd.md`, dan `docs/architecture.md` masih menyebut scope empat minggu dan delapan layar. Selaraskan di PR ini
+## Butuh dari pemilik repo
 
-## Menunggu atau rusak
-
-- Akun Neon dengan pgvector — belum ada, penghambat T-003
-- Kunci API penyedia AI — belum ada, penghambat hari 5
-- Badan PR #1 masih menjelaskan empat commit pertama saja
+1. **Akun Neon** dengan `pgvector` aktif, lalu `DATABASE_URL` ditaruh di `.env.local` dan di Vercel. ~5 menit. Memblokir T-003.
+2. **API key penyedia AI** untuk embedding dan generasi. ~5 menit. Memblokir T-009 dan seterusnya, tapi belum dibutuhkan hari 1.
+3. Review PR #1.
 
 ## Catatan
 
-Seluruh konten dokumen bersifat sintetis dan fiktif. Tidak ada dokumen Telkom asli yang boleh masuk ke lingkungan mana pun yang terhubung API publik.
+Hari 5 (T-011 + T-012) adalah hari terberat. Kalau tersendat, yang dipotong pertama adalah penyimpanan riwayat percakapan — chat tetap berfungsi, riwayatnya saja yang tidak tersimpan. Urutan potong lengkap ada di `docs/scope-mvp.md`.

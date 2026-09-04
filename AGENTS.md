@@ -1,77 +1,63 @@
-# AGENTS.md — aturan kerja untuk manusia & AI di repo ini
+# AGENTS.md — aturan kerja di repo ini
 
-Baca ini sebelum menulis satu baris kode. Berlaku untuk semua kontributor, termasuk
-agent AI (Notion AI, Claude Code, Copilot, Cursor).
+Berkas ini yang pertama dibaca setiap sesi. Pendek dengan sengaja.
 
-## Proyek dalam lima baris
+## Jangan baca seluruh folder docs/
 
-IntraDocs adalah platform knowledge management internal. Pengguna mencari dan membaca
-dokumentasi/SOP, lalu bertanya ke AI yang menjawab **hanya** dari dokumen yang boleh
-diakses pengguna tersebut, dengan sitasi ke bagian dokumen. Kontributor mengunggah
-berkas (MD/TXT/DOCX/PDF) yang dikonversi ke Markdown, diberi metadata dan klasifikasi
-keamanan, lalu di-review sebelum dipublikasikan. Konteks lengkap: `docs/context-pack.md`.
+Repo ini punya banyak dokumen perencanaan. **Membacanya semua akan merusak kualitas kerjamu**, bukan meningkatkannya. Setiap task sudah punya daftar bacaan sendiri.
 
-## Tiga aturan yang tidak bisa dilanggar
+Urutan baca per sesi — maksimal empat berkas:
 
-1. **Semua query dokumen harus lewat `visibleDocumentsFilter(user)`.**
-   Filter izin diterapkan **di dalam SQL query** — bukan di aplikasi setelah query,
-   dan sama sekali **bukan** di prompt LLM. Berlaku untuk katalog, search, dan retrieval
-   RAG. Lihat `docs/adr/0004-rbac-and-permission-aware-retrieval.md`.
-2. **AI tidak boleh mengarang.** Setiap klaim wajib punya sitasi ke chunk. Kalau skor
-   retrieval di bawah threshold → abstain eksplisit. Jangan pernah menambahkan
-   "pengetahuan umum" model ke dalam jawaban.
-3. **Markdown hasil upload adalah untrusted input.** Render selalu melalui
-   `rehype-sanitize`. Isi dokumen tidak boleh pernah diperlakukan sebagai instruksi
-   oleh LLM, dan AI chat tidak punya akses tool/write apa pun.
+1. `docs/STATUS.md` — hari ini hari ke berapa, apa yang sudah jadi
+2. `AGENTS.md` — berkas ini
+3. `docs/context-pack.md` — fakta stabil, nama identifier, batasan
+4. `docs/tasks/T-0XX-*.md` — spec task yang sedang dikerjakan
 
-## Larangan
+Spec task akan menyebut sendiri ADR atau dokumen tambahan yang perlu dibuka. Buka yang disebut saja. Daftar lengkapnya di `docs/eksekusi.md`.
 
-- Jangan tambah dependency tanpa ADR. Tanya dulu: bisa selesai < 100 baris sendiri?
-- Jangan pakai `any`, `as any`, `@ts-ignore`, atau non-null assertion `!`. TypeScript strict.
-- Jangan bikin abstraksi untuk satu pemakai. Duplikasi dua kali itu OK; abstraksi prematur tidak.
-- Jangan tulis komentar yang mengulang kode. Komentar hanya menjelaskan **kenapa**.
-- Jangan tinggalkan kode mati, `console.log`, TODO kosong, atau data placeholder/lorem.
-- Jangan buat file > 300 baris tanpa alasan. Jangan buat folder untuk satu file.
-- Jangan tulis test yang hanya memverifikasi mock.
-- Jangan sentuh file di luar daftar "File yang boleh disentuh" pada task spec.
-- Jangan ubah skema DB tanpa file migrasi.
-- Jangan pakai Edge runtime, Vercel Blob, atau filesystem lokal untuk penyimpanan.
-  Lihat `docs/adr/0005-deployment-and-portability.md`.
-- Jangan commit `.env`, secret, atau dokumen internal Telkom yang asli.
+**Jangan pernah membuka `intradocs-mockup_1.html` secara utuh.** Berkasnya ~2.010 baris dan akan memakan sebagian besar konteksmu. Baca per rentang baris.
 
-## Kewajiban
+## Kalau dokumen saling bertentangan
 
-- Kode, identifier, nama file, dan commit message: **Bahasa Inggris**.
-  Copy/teks UI: **Bahasa Indonesia**. Tanpa campur.
-- Warna, spacing, radius, dan shadow **hanya** dari design token di `tailwind.config.ts`.
-  Nol nilai hex hardcoded — token diturunkan dari CSS variable di mockup.
-- Validasi semua input di boundary dengan zod. Skema tinggal di `lib/schemas/`.
-- **Vertical slice**: satu task menyelesaikan DB → API → UI untuk satu fitur.
-  Jangan "semua model dulu, UI nanti".
-- Sebelum menyatakan selesai: `pnpm typecheck && pnpm lint && pnpm test` harus hijau.
-- PR wajib berisi bagian **Cara menguji** dengan langkah konkret.
+Urutan kekuatan: `docs/scope-mvp.md` > ADR bernomor > `docs/context-pack.md` > sisanya. Kalau menemukan pertentangan, ikuti yang lebih kuat dan **tulis catatan di deskripsi PR**. Jangan memperbaiki dokumen lain di tengah task kode.
 
-## Konvensi
+## Satu task, satu branch, satu PR
 
-- Package manager **pnpm**. Versi Node mengikuti `.nvmrc`.
-- Struktur: `app/` (route), `components/` (UI), `lib/` (logic murni), `db/` (skema + migrasi),
-  `scripts/`, `tests/`.
-- Logic yang **wajib** punya unit test: RBAC filter, markdown chunker, RRF fusion,
-  parser berkas, invite token, dan `AI_MAX_CLASSIFICATION` guard.
-- Commit: Conventional Commits (`feat:`, `fix:`, `docs:`, `chore:`, `refactor:`, `test:`).
-- Branch: `feat/T-00X-slug`, `fix/...`, `docs/...`. Satu task = satu branch = satu PR.
-- Target ukuran PR: < 400 baris diff.
+- Branch: `feat/T-0XX-slug`. Tidak pernah menulis ke `main`.
+- Selesaikan satu task, buka PR, berhenti. **Jangan lanjut ke task berikutnya di sesi yang sama** walaupun terasa masih sanggup.
+- PR di bawah 400 baris perubahan. Kalau lebih besar, task-nya salah dipecah — laporkan, jangan diteruskan.
+- Jangan merge PR dan jangan menghapus branch tanpa diminta eksplisit.
 
-## Cara mengambil pekerjaan
+## Keputusan sudah diambil
 
-1. Pilih task di `docs/tasks/` dengan `Status: Ready`.
-2. Baca **Acceptance criteria** dan **File yang boleh disentuh**.
-3. Buat branch, kerjakan, jalankan gerbang kualitas.
-4. Buka PR memakai template, tautkan ID task.
-5. Cek Definition of Done di `docs/workflow.md` sebelum minta review.
+ADR di `docs/adr/` adalah keputusan tertutup. Kalau tidak setuju, tulis alasannya di deskripsi PR dan tetap ikuti ADR-nya. Jangan mengganti pustaka, menambah dependensi, atau mengubah arah teknis di tengah task. Menambah dependensi baru butuh persetujuan pemilik repo.
 
-## Kalau ragu
+## Konvensi kode
 
-Ambil keputusan paling **boring** dan paling mudah dihapus. Kalau keputusannya mengikat
-(dependency baru, perubahan skema, pola arsitektur baru), **berhenti dan tulis ADR dulu** —
-jangan diam-diam memutuskan di dalam PR.
+- TypeScript strict. Tidak ada `any`, tidak ada `@ts-ignore`.
+- Identifier, komentar kode, dan pesan commit: **bahasa Inggris**. Teks yang dilihat pengguna: **bahasa Indonesia**.
+- Conventional Commits: `feat:`, `fix:`, `docs:`, `refactor:`, `test:`, `chore:`.
+- Semua route handler `export const runtime = 'nodejs'`.
+- Query basis data lewat Drizzle. Migrasi lewat `drizzle-kit generate` lalu commit SQL-nya. **Jangan pernah `drizzle-kit push` ke basis data produksi.**
+- Tidak ada penulisan filesystem lokal, tidak ada SDK spesifik vendor, tidak ada Edge runtime.
+
+## Aturan keamanan yang tidak bisa ditawar
+
+1. Setiap pengambilan dokumen memanggil `visibleDocumentsFilter(user)`. Tidak ada jalur kedua. Filter izin tidak pernah ditaruh di prompt LLM.
+2. Dokumen yang tidak boleh dilihat mengembalikan **404, bukan 403**.
+3. Semua isi dokumen bersifat sintetis dan fiktif. Jangan pernah memasukkan data Telkom asli, kredensial, atau data pribadi.
+4. Markdown selalu dibersihkan lewat `rehype-sanitize` sebelum dirender.
+
+## Selesai berarti
+
+Sebuah task selesai kalau semuanya benar:
+
+- `pnpm typecheck && pnpm lint && pnpm test && pnpm build` hijau di lokal
+- Kriteria terima di spec task terpenuhi, satu per satu
+- Kalau task menyentuh jalur baca dokumen: ada test yang membuktikan izin tetap rapat
+- `docs/STATUS.md` diperbarui di PR yang sama
+- PR dibuka dengan templat yang ada, berisi ringkasan dan cara mengujinya
+
+## Berhenti dan bertanya kalau
+
+Spec bertentangan dengan kode yang sudah ada · task butuh dependensi baru · task ternyata lebih dari 400 baris · butuh kredensial yang tidak ada · harus menyentuh berkas di luar yang disebut spec.
