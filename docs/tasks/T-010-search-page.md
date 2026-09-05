@@ -1,43 +1,24 @@
-# T-010 — Halaman hasil pencarian
+# T-010: Halaman pencarian
 
-Hari 4 · orang B · perkiraan setengah hari
+Pemilik B; prasyarat T-002. Bisa paralel T-009 dengan fixture kontrak; integrasi wajib sebelum ditutup.
 
-## Tujuan
+## Baca tambahan
 
-Layar 2 mockup, memakai endpoint dari T-009.
+API search dan ui-inventory.
 
-## Prasyarat
+## Lingkup
 
-T-002 (AppShell) sudah ada. T-009 boleh berjalan paralel — pakai data tiruan dulu bila endpoint belum siap.
+/cari menerima q/categoryId di URL; daftar judul/snippet/kategori/label/klasifikasi/verified/tanggal memakai respons API. Highlight literal kueri sebagai teks/elemen aman, tidak menginjeksi HTML respons. Cursor/limit mengikuti API.
 
-## Baca dulu
-
-`docs/ui-inventory.md` · `docs/api-contract.md`
-
-## Berkas yang disentuh
-
-`app/cari/page.tsx` · `components/search/*` · `components/ui/*` (pakai ulang, jangan bikin baru kalau sudah ada)
-
-## Langkah
-
-1. Kotak pencarian dengan kueri di URL, supaya hasil bisa dibagikan lewat tautan.
-2. Baris hasil: judul, cuplikan, kategori, label, lencana klasifikasi, lencana Terverifikasi, tanggal diperbarui.
-3. Filter kategori di samping. **Hanya kategori** — filter lain ada di urutan potong.
-4. Baris ringkasan di atas hasil: jumlah hasil dan durasi, dihitung sungguhan dari respons, bukan angka mockup.
-5. Tombol "Lanjutkan di chat" yang membawa kueri ke `/ai-assistant`.
-6. Tiga keadaan wajib: tidak ada hasil, sedang memuat, gagal memuat. Keadaan kosong menyebutkan bahwa hasil dibatasi hak akses.
+Tombol Lanjutkan di chat membawa q ke /ai-assistant. Tampilkan mode keyword saat fallback, total/durasi dari respons. Filter kategori saja. Tidak ada kotak jawaban AI, bahkan bila task selesai lebih cepat.
 
 ## Kriteria terima
 
-- Mencari lalu memuat ulang halaman menghasilkan tampilan yang sama.
-- Filter kategori mengubah hasil tanpa memuat ulang seluruh halaman.
-- Terlihat wajar di lebar 375 px: sidebar filter menutup, hasil tetap terbaca.
-- Tidak ada angka pengisi dari mockup yang tersisa di kode.
+- [ ] Refresh/ganti kategori/pagination mempertahankan URL dan hasil konsisten.
+- [ ] Loading/kosong/error serta fallback dapat dibedakan; kosong tidak mengisyaratkan dokumen tersembunyi.
+- [ ] Snippet/query berisi markup berbahaya tidak dieksekusi.
+- [ ] Tidak ada placeholder angka/judul terkunci; sumber total API, bukan array sebelum izin.
+- [ ] Keyboard dan 375 px berfungsi; filter menutup tanpa menutupi hasil.
+- [ ] Test komponen state/highlight dan uji integrasi endpoint selesai.
 
-## Test
-
-Satu test komponen untuk keadaan kosong dan keadaan gagal. Sisanya diperiksa manual.
-
-## Di luar ruang lingkup
-
-Blok jawaban AI di halaman pencarian — itu ada di layar 2 mockup, tapi milik T-011/T-012 dan hanya dikerjakan kalau hari 5 selesai lebih cepat. Pengurutan, penomoran halaman, riwayat pencarian.
+Pisahkan UI dan integrasi menjadi T-010a/b bila melebihi 8 berkas/400 baris; definisikan pembagian sebelum coding.

@@ -1,47 +1,27 @@
-# T-007: Katalog, kategori, label, Help Center
+# T-007: Halaman muka dan katalog
 
-- Pemilik: Orang B · Minggu 1 · Estimasi: 1 hari
+Pemilik B; prasyarat T-002/T-003/T-005. Fixture T-003 cukup untuk pengembangan; demo final memakai T-008.
 
-## Tujuan
+## Baca tambahan
 
-Pengguna bisa menemukan dokumen dengan menjelajah, bukan hanya dengan mencari — dan hanya
-melihat yang boleh dilihatnya.
+API katalog; ui-inventory; mockup-alignment layar 1/3 bila perlu.
 
-## Konteks
+## Subtask
 
-Baca `docs/ui-inventory.md`, `docs/api-contract.md`, `docs/rbac-matrix.md`. Lihat screen s1
-pada mockup.
+- T-007a: GET documents/categories/labels dan hitungan terotorisasi.
+- T-007b: / dan /katalog, kartu kategori, daftar dokumen terbaru, filter kategori/cursor di URL.
 
-## Lingkup
+Pakai AppShell, jangan dibuat ulang. Kategori satu tingkat. Halaman muka berisi pencarian, enam kartu kategori, dokumen published terbaru, tautan AI; statistik hanya bila dihitung sesudah filter izin.
 
-- Halaman Help Center: hero dengan search, enam kartu kategori beserta jumlah dokumen,
-  chip topik populer, bagian "Paling banyak dibaca bulan ini", banner AI.
-- Halaman kategori dengan sub-kategori dan daftar dokumen.
-- Filter: kategori, label, klasifikasi, terakhir diperbarui, status.
-- Filter tersimpan di URL query string agar bisa dibagikan dan di-bookmark.
-- Pagination berbasis cursor.
-- Sidebar: Navigasi, Kontribusi, Bantuan — sesuai mockup.
-- Peringkat "paling banyak dibaca" dari `document_view`.
+Tidak ada topik populer, paling banyak dibaca, favorit, riwayat baca, subkategori, atau filter selain kategori. Cursor/limit mengatur daftar, bukan fitur filter produk tambahan. Tidak membuat tabel document_view.
 
-## Acceptance criteria
+## Kriteria terima
 
-- [ ] Jumlah dokumen per kategori **menghormati izin pengguna** — dua pengguna berbeda dapat
-      angka berbeda
-- [ ] Filter bisa digabungkan dan tercermin di URL
-- [ ] Refresh halaman mempertahankan filter
-- [ ] State kosong menjelaskan langkah berikutnya, bukan hanya "tidak ada data"
-- [ ] Angka statistik pada hero berasal dari data nyata, atau tidak ditampilkan
-- [ ] Bisa dinavigasi sepenuhnya dengan keyboard
-- [ ] Rendering di server, tanpa state manager global
+- [ ] Daftar dan total memakai filter sama, total dihitung sebelum pagination tetapi sesudah izin.
+- [ ] Viewer Demo/reviewer sempit/admin mendapat tepat daftar fixture yang diizinkan. Tidak semua pasangan harus berbeda.
+- [ ] Ganti kategori/refresh/pagination mempertahankan URL dan tidak mengulang/melewatkan item akibat urutan tidak stabil.
+- [ ] Ringkasan public/internal tetap lintas kategori; restricted mengikuti scope.
+- [ ] State loading/kosong/error dan keyboard/375 px diperiksa.
+- [ ] Tidak ada judul terkunci, hitungan global bocor, atau angka mockup yang menjadi fakta.
 
-## Batasan
-
-- **Jangan menampilkan angka "96% akurasi AI" dari mockup.** Angka yang tidak diukur adalah
-  angka yang menyesatkan (lihat `docs/eval/README.md`).
-- Jumlah dokumen tidak boleh dihitung dengan cara yang membocorkan keberadaan dokumen
-  terlarang.
-
-## Cara menguji
-
-Login sebagai `viewer` dengan clearance `internal` lalu sebagai `admin`. Bandingkan jumlah
-per kategori dan daftar dokumennya — keduanya harus berbeda dan konsisten dengan matriks RBAC.
+Tambahkan integrasi endpoint pada catalog-visibility.spec.ts; jangan hanya menguji komponen dengan array tersaring.

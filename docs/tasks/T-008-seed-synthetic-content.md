@@ -1,56 +1,29 @@
-# T-008: Seed 20–30 dokumen sintetis
+# T-008: Korpus sintetis dan baseline eval
 
-- Pemilik: Orang B · Minggu 1 · Estimasi: 1 hari (bisa dicicil)
+Pemilik B. Penulisan Markdown/eval dapat dimulai tanpa kode; integrasi seed menunggu T-003 dan pipeline T-006b.
 
-## Tujuan
+## Baca tambahan
 
-Konten yang realistis untuk pengembangan, demo, dan eval — **tanpa pernah menyentuh dokumen
-internal Telkom yang asli.**
+Scope bagian korpus, eval README, tabel seed matriks RBAC.
 
-## Kenapa task ini setara pentingnya dengan task kode
+## Subtask
 
-Tiga alasan. Pertama, demo dengan data placeholder "Lorem ipsum" tidak akan meyakinkan
-siapa pun untuk memakai platform ini. Kedua, kualitas retrieval tidak bisa dinilai tanpa
-korpus yang menyerupai korpus nyata — termasuk kemiripan antar dokumen yang membingungkan
-search. Ketiga, dokumen ini sekaligus menjadi eval set (`docs/eval/`).
+- T-008a: kontrak frontmatter dan batch 1 korpus.
+- T-008b: batch lanjutan sampai total 20–25 dokumen; satu PR per batch <=400 baris.
+- T-008c: integrasi scripts/seed.ts memakai pipeline publikasi dan fixture akun T-003; sepuluh kasus eval final.
 
-## Konteks
+Lokasi db/seed/documents/. Frontmatter divalidasi zod: title, slug unik, categorySlug, labels, classification, owner fixture, reviewPeriodDays; metadata tanggal/versi sintetis bila diperlukan. Tentukan schema bersama T-006, bukan dua parser.
 
-Baca `docs/adr/0003-ai-provider-and-data-classification.md` dan `docs/eval/README.md`.
-Ambil gaya penulisan, penomoran, dan struktur dari mockup.
+Enam kategori: Infrastruktur & Jaringan; Keamanan Informasi; Aplikasi Internal; SOP & Proses Bisnis; Onboarding & SDM; Data & Integrasi. Semua klasifikasi terwakili. Sertakan near-duplicate, satu kedaluwarsa, tabel, kode, heading tiga tingkat pada minimal tiga dokumen, serta restricted pada dua kategori.
 
-## Lingkup
+## Kriteria terima
 
-- 20–30 dokumen Markdown di `db/seed/documents/`, dengan YAML frontmatter lengkap.
-- Tersebar di keenam kategori dan keempat level klasifikasi.
-- Gaya mengikuti contoh di mockup: `SOP-IT-014 Manajemen Identitas`,
-  `Kebijakan Password & Autentikasi Perusahaan (ISMS-POL-07)`, `Matriks SLA Layanan IT 2026`,
-  `Runbook VPN`.
-- Sertakan struktur yang menantang: tabel, list bertingkat, blok kode, referensi antar
-  dokumen, nomor versi.
-- Sertakan beberapa dokumen yang **saling mirip** (misal dua kebijakan password dari tahun
-  berbeda) untuk menguji ketajaman retrieval.
-- Beberapa dokumen sengaja dibuat kadaluarsa untuk menguji peringatan tinjau ulang.
-- `scripts/seed.ts` — idempotent: memuat dokumen, kategori, label, pengguna contoh untuk
-  setiap kombinasi role/clearance.
+- [ ] Total 20–25 dokumen fiktif; tidak menyalin helpdesk, chat internal, data Telkom asli atau kredensial sungguhan.
+- [ ] Seed ulang idempotent: tidak menggandakan akun/dokumen/versi/chunk; perubahan konten menggunakan pipeline versi.
+- [ ] Tepat enam akun sesuai matriks; Fajar nonaktif, Viewer Demo aktif, reviewer Dwi cakupan sempit.
+- [ ] Sepuluh kasus baseline terdiri dari delapan answerable (termasuk dua parafrase) dan dua outside-corpus wajib abstain. Tidak menyatakan kasus abstain bisa dijawab dari korpus.
+- [ ] expect_docs mengacu slug yang benar-benar ada dan boleh dibaca actor; kasus abstain memakai daftar kosong.
+- [ ] Kasus RBAC lintas role dan multi-turn disiapkan terpisah sebagai test integrasi, tidak merusak denominasi baseline retrieval.
+- [ ] Teks dibaca manusia dan struktur layak dokumentasi, bukan sekadar lolos parser.
 
-## Acceptance criteria
-
-- [ ] `pnpm seed` berjalan dari database kosong maupun database yang sudah terisi
-- [ ] Keempat klasifikasi dan keenam kategori terwakili
-- [ ] Panjang dokumen bervariasi: ada yang satu halaman, ada yang panjang
-- [ ] Minimal 30 pertanyaan eval bisa dijawab dari korpus ini
-- [ ] **Nol data Telkom asli.** Semua nama orang, sistem, dan angka bersifat fiktif
-- [ ] Frontmatter valid dan lolos validasi zod
-
-## Batasan
-
-- Jangan menyalin dokumen internal asli, bahkan sebagian, bahkan untuk pengembangan lokal.
-- Jangan memakai nama karyawan sungguhan.
-- Tulis dalam bahasa Indonesia, dengan gaya dokumentasi korporat.
-
-## Cara menguji
-
-Jalankan seed, jelajahi katalog sebagai role berbeda, lalu baca beberapa dokumen. Kalau
-terasa seperti dokumentasi sungguhan, task ini berhasil. Kalau terasa seperti data uji,
-belum.
+Angka/nama mockup bukan statistik produksi. Semua bukti kualitas menyebut ukuran sampel.
