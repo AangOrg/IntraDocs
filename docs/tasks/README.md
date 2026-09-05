@@ -1,49 +1,31 @@
-# Papan Task
+# Papan task — urutan dependensi, bukan deadline
 
-Satu task satu branch `feat/T-0XX-slug`, satu PR, di bawah 400 baris diff. Spec ditulis paling lambat sehari sebelum dikerjakan.
+Semua T-001–T-014 mempunyai spec. Parent task besar berisi subtask; satu subtask terkecil satu sesi/PR <=8 berkas kode/400 baris. Hari/minggu pada dokumen historis bukan izin mempercepat melewati gerbang. Tidak ada task T-015: pemindaian sensitif milik T-006b.
 
-Orang A memegang data, izin, dan retrieval. Orang B memegang antarmuka. Pembagian ini menjaga agar dua orang jarang menyentuh berkas yang sama.
-
-## Sprint enam hari
-
-| Hari | Task | Orang | Keluaran |
+| Task | Pemilik | Prasyarat implementasi | Keluaran |
 | --- | --- | --- | --- |
-| 1 | T-001 kerangka proyek dan deploy | A | Repo jalan, CI hijau, URL Vercel hidup |
-| 1 | T-002 design token dan `AppShell` responsif | B | Token dari mockup, shell menutup di ponsel |
-| 1 | T-003 skema sebelas tabel dan seed | A | Migrasi terpasang, lima pengguna, dua puluh dokumen contoh |
-| 2 | T-004 autentikasi akun lokal | A | Masuk dan keluar, sesi berisi role dan cakupan |
-| 2 | T-005 filter izin dan test kebocoran | A | `visibleDocumentsFilter` dan seluruh `tests/rbac/` hijau |
-| 2 | T-007 katalog dan filter kategori | B | Layar 3 jalan dengan data nyata |
-| 3 | T-006 viewer, daftar heading, form sunting | B | Layar 4 jalan, publikasi memicu embedding |
-| 3 | T-008 dokumen sintetis | B | Dua puluh sampai dua puluh lima berkas Markdown |
-| 3 | T-015 pemeriksaan konten sensitif | A | Peringatan pola kredensial saat publikasi |
-| 4 | T-009 hybrid search dan RRF | A | Identifier persis dan parafrase, keduanya tepat |
-| 4 | T-010 halaman hasil pencarian | B | Layar 2 jalan |
-| 5 | T-011 endpoint RAG, sitasi, abstain | A | SSE mengalir, sitasi menunjuk bagian dokumen |
-| 5 | T-012 halaman AI Assistant | B | Layar 9 jalan, percakapan berlanjut |
-| 6 | T-013 eval dan tuning | A | `pnpm eval` mencetak angka, kebocoran nol |
-| 6 | T-014 polish, README, skrip demo | B | Bisa didemokan tanpa penjelasan |
+| T-001 | A | Infra pemilik untuk deploy | Scaffold, CI, env, deploy tanpa Docker |
+| T-002 | B | T-001a | Token, AppShell responsif |
+| T-003 | A | T-001a + DB uji | Sebelas tabel domain dan fixture minimal enam akun |
+| T-004 | A | T-003 | Auth.js credentials dan guard sesi terkini |
+| T-005 | A | T-003/T-004 | Filter SQL dan tujuh suite izin tingkat query/guard |
+| T-006 | B/A per subtask | T-002/T-005 + key AI untuk publish | CRUD, viewer, scan, embed/publish/reindex atomik |
+| T-007 | B | T-002/T-005 | Halaman muka/katalog, hitungan berizin |
+| T-008 | B | Penulisan bebas; integrasi T-003/T-006b | 20–25 dokumen, 10 kasus eval |
+| T-009 | A | T-005/T-006b/T-008 | Hybrid/fallback, log, gerbang retrieval |
+| T-010 | B | T-002; integrasi T-009 | /cari, kategori, highlight aman |
+| T-011 | A | T-009 lulus gerbang | AI berscope, SSE, ownership/riwayat, sitasi |
+| T-012 | B | T-002; integrasi T-011 | UI AI/multi-turn/riwayat/feedback |
+| T-013 | A | T-011/T-012 + korpus beku | Evaluasi nyata dan gerbang rilis |
+| T-014 | B | Fitur inti + T-013 | Walkthrough, README, bukti rilis |
 
-## Perubahan dari pemeriksaan mockup layar 9-11
+## Koordinasi
 
-Rinciannya di `docs/mockup-alignment.md`. Tidak ada task baru yang besar; sebagian besar diserap task yang sudah ada.
+- T-006b memiliki provider embed/pipeline; T-009 memakai, T-011 menambahkan chat lewat kontrak yang sama. Tidak membuat provider duplikat.
+- T-003 memiliki fixture akun/minimal; T-008 memiliki korpus dan seed penuh. Keduanya memakai tabel seed matriks RBAC.
+- T-005 membuktikan query/guard sebelum fitur; setiap task endpoint kemudian menambah integrasi. Tidak mengklaim HTTP search/chat sudah diuji pada tahap sebelum endpoint dibuat.
+- T-001/T-003 dapat memerlukan pecahan lebih kecil karena generated file dihitung dalam batas PR. Definisikan sebelum eksekusi.
 
-| Task | Yang bertambah | Kenapa sekarang |
-| --- | --- | --- |
-| T-002 | Sidebar menutup di bawah titik potong | Menyisipkan perilaku responsif ke enam halaman jadi jauh lebih mahal |
-| T-003 | `user.category_scope`, `user.is_active`, tabel `conversation` dan `message` | Skema menjadi sebelas tabel. Menambah dimensi izin setelah test hijau berarti menulis ulang test dan seed |
-| T-005 | `tests/rbac/category-scope.spec.ts` dan `inactive-user.spec.ts` | Ikut sekali jalan dengan test kebocoran |
-| T-009, T-010 | Satu baris log per kueri | Satu `INSERT`. Tanpanya dashboard fase 2 tidak punya data |
-| T-011 | Penulisan ulang pertanyaan lanjutan, parameter ruang lingkup | Pertanyaan lanjutan hampir pasti ditanyakan saat demo |
-| T-012 | Riwayat percakapan, selektor ruang lingkup, umpan balik jempol | Layar 9 adalah halaman inti, bukan pelengkap |
-| T-015 | Task baru, kecil | Persyaratan kepatuhan di layar 11, sekaligus pengaman terhadap aturan kita sendiri |
+## Lulus
 
-## Hari yang paling menentukan
-
-**Hari 2.** Kalau filter izin belum benar dan test kebocoran belum hijau di akhir hari 2, jangan lanjut ke hari 3. Seluruh nilai produk ini bertumpu pada satu klausa `WHERE`, dan memperbaikinya setelah empat hari kode menumpuk di atasnya jauh lebih mahal.
-
-**Hari 5 adalah hari terpadat.** Endpoint RAG dan halaman chat dikerjakan bersamaan, dan keduanya bertambah isi setelah pemeriksaan mockup. Kalau hari 5 tersendat, yang dipotong adalah penyimpanan riwayat percakapan lebih dulu, bukan sitasi dan bukan jalur abstain. Urutan potong lengkap ada di `docs/scope-mvp.md`.
-
-## Spec yang belum ditulis
-
-T-009 sampai T-015 ditulis sehari sebelum dikerjakan. Menulis semuanya sekarang berarti menulis rencana untuk keadaan yang belum diketahui.
+Checklist spec dan gerbang scope dipenuhi dengan bukti. Tidak ada persetujuan pemotongan otomatis. Status implementasi tetap di docs/STATUS.md dan PR aktual; tabel ini bukan klaim pekerjaan sudah selesai.
