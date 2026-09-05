@@ -1,54 +1,27 @@
-# T-004: Auth — akun lokal + invite
+# T-004: Auth.js kredensial tanpa invite
 
-- Pemilik: Orang A · Minggu 1 · Estimasi: 1 hari
+Nama berkas lama dipertahankan agar tautan tidak putus; invite tetap Fase 2. Pemilik A; prasyarat T-003 selesai.
 
-## Tujuan
+## Baca tambahan
 
-Login yang aman tanpa bergantung pada SSO maupun infrastruktur email.
+API bagian autentikasi; matriks RBAC; ADR-0001 bagian auth.
 
-## Konteks
+## Subtask
 
-Baca `docs/rbac-matrix.md`, `docs/api-contract.md` bagian Autentikasi,
-`docs/adr/0001-tech-stack.md`.
+- T-004a: Auth.js credentials, hashing Argon2id sesuai stack, cookie/session dan facade login/logout.
+- T-004b: guard identitas terkini dan test login/sesi nonaktif.
 
-## Lingkup
+Tidak membuat mekanisme cookie/token session sendiri. Endpoint facade mengikuti kontrak dan menjalankan mekanisme/CSRF Auth.js. OIDC tidak diaktifkan; tidak membangun alur invite, UI pendaftaran, rate limiter aplikasi, atau email.
 
-- Auth.js dengan credentials provider, session berbasis cookie.
-- Hash password dengan `@node-rs/argon2` (Argon2id, parameter yang wajar).
-- Alur invite: admin membuat invite → sistem menghasilkan tautan bertoken (kadaluarsa 7 hari)
-  → **admin menyalin tautan secara manual** → penerima menetapkan nama dan password.
-- Baris pengguna membawa `role`, `clearance`, `unit` — ditetapkan saat invite dibuat.
-- Rate limit pada login (per IP dan per email).
-- Cookie `httpOnly`, `secure`, `sameSite=lax`.
-- `scripts/seed-admin.ts` untuk membuat admin pertama.
-- Provider OIDC sudah **ter-wire di balik feature flag** `AUTH_OIDC_ENABLED`, mati secara
-  default.
+Session mengidentifikasi user; role/category_scope/is_active diperiksa ulang dari DB pada setiap permintaan terlindungi. Jangan percaya klaim role lama dalam cookie sebagai otorisasi final. Tidak ada clearance independen.
 
-## Kenapa invite manual, bukan email
+## Kriteria terima
 
-Menyiapkan pengiriman email di lingkungan korporat butuh persetujuan, domain, dan SPF/DKIM —
-semuanya di luar kendali kita dan bisa memakan berhari-hari. Menyalin tautan secara manual
-membuat kita tidak diblokir sama sekali, dan pengiriman email bisa ditambahkan kapan pun
-tanpa mengubah alur.
+- [ ] Lima akun aktif termasuk Viewer Demo login; Fajar dengan password benar mendapat 401 generik tanpa sesi.
+- [ ] Email tak terdaftar/password salah/nonaktif tidak dapat dibedakan melalui pesan.
+- [ ] Cookie httpOnly, secure pada HTTPS, sameSite sesuai Auth.js; logout membatalkan akses sesi.
+- [ ] Sesi yang dibuat sebelum user dinonaktifkan ditolak pada permintaan berikutnya. Perubahan role/scope berlaku segera.
+- [ ] Kredensial tidak masuk log; password seed hanya sintetis untuk demo, tidak dipakai di layanan nyata.
+- [ ] Test negatif CSRF dan login/logout serta guard DB berjalan; suite inactive-user dipakai ulang T-005, bukan diduplikasi.
 
-## Acceptance criteria
-
-- [ ] Admin bisa membuat invite dan mendapatkan tautan yang bisa disalin
-- [ ] Invite kadaluarsa dan invite yang sudah dipakai ditolak dengan pesan jelas
-- [ ] Login gagal tidak membocorkan apakah email tersebut terdaftar
-- [ ] Password di bawah kebijakan minimum ditolak di server, bukan hanya di klien
-- [ ] Session memuat `role`, `clearance`, `unit`; tipenya aman di seluruh aplikasi
-- [ ] Rate limit terbukti bekerja lewat test
-- [ ] Menyalakan `AUTH_OIDC_ENABLED` menampilkan tombol SSO tanpa memutus login lokal
-- [ ] `scripts/seed-admin.ts` berjalan idempotent
-
-## Batasan
-
-- Jangan menulis logic auth sendiri di luar Auth.js.
-- Jangan mencatat password atau token ke log.
-- Token invite harus acak secara kriptografis dan disimpan sebagai hash.
-
-## Cara menguji
-
-Seed admin → buat invite → buka di jendela incognito → selesaikan pendaftaran → login →
-periksa isi session. Coba pakai ulang invite yang sama; harus ditolak.
+Bukti: test akun aktif/nonaktif dan sesi lama. Pengamanan produksi tambahan di luar MVP dicatat, bukan dijadikan alasan menyebut demo aman untuk data sungguhan.

@@ -1,53 +1,35 @@
-# T-006: CRUD dokumen + viewer Markdown
+# T-006: Dokumen, publikasi, viewer
 
-- Pemilik: Orang B · Minggu 1 · Estimasi: 1,5 hari
+Pemilik B untuk UI, koordinasi A untuk pipeline; satu pemilik per subtask. Prasyarat T-002/T-003/T-004/T-005. API key embedding dibutuhkan pada subtask publikasi, tidak baru pada T-009.
 
-## Tujuan
+## Baca tambahan
 
-Dokumen bisa dibuat, diedit, dan dibaca dengan tampilan yang membangun kepercayaan.
+API katalog/dokumen; arsitektur publikasi; ui-inventory layar 4/5; matriks aksi.
 
-## Konteks
+## Subtask berurutan
 
-Baca `docs/api-contract.md`, `docs/ui-inventory.md`,
-`docs/adr/0002-content-source-of-truth.md`. Lihat screen s3 pada mockup dan perbarui
-`docs/ui-inventory.md` bila isinya berbeda dari perkiraan.
+- T-006a (B): CRUD draft terotorisasi, form/pratinjau, masukan md/txt jadi teks.
+- T-006b (A): AiProvider.embed, parser heading/anchor/chunker, scan sensitif, pipeline publish/reindex sinkron dan test transaksi.
+- T-006c (B): viewer server tersanitasi, DocNav/metadata/expired state dan integrasi sitasi.
 
-## Lingkup
+Tidak ada task T-015 terpisah: scan sudah termasuk T-006b. Modul lib/ai/provider.ts menyediakan antarmuka embed/chat; implementasi chat milik T-011. Koordinasikan perubahan berkas, bukan dua implementasi provider.
 
-- Komponen bersama lebih dahulu: `AppShell`, `ClassificationBadge`, `MarkdownViewer`,
-  `EmptyState`, `ErrorState`, `PermissionDeniedState`.
-- Editor Markdown sederhana dengan pratinjau terpisah. **Bukan WYSIWYG.**
-- Render `remark` → `rehype` → HTML **di server**, dengan `rehype-sanitize`, di-cache per
-  `document_version`.
-- Daftar isi otomatis dari heading, dengan penanda posisi saat menggulir.
-- Panel metadata: pemilik, unit, kategori, label, klasifikasi, versi, tanggal update,
-  badge terverifikasi.
-- Peringatan bila dokumen melewati `review_period_days`.
-- Daftar versi dengan tautan ke versi terdahulu (read-only).
-- Buat dan edit draft, simpan versi baru saat dipublikasikan.
+## Kontrak publikasi
 
-## Di luar lingkup
+POST/PATCH dokumen dan POST /api/documents/:id/publish mengikuti API. Konten draft berbeda dari versi published. Validasi klasifikasi/cakupan target, optimistic revision, scan sebelum embed. Konfirmasi warning hanya untuk false-positive sintetis dan terikat revision; data asli tetap dilarang.
 
-Upload berkas (T-009/T-010), alur review (T-012), UI diff antar versi (v1.1).
+Ikuti transaksi pada arsitektur: embedding gagal tidak menerbitkan versi setengah jadi; perubahan metadata dan chunk konsisten. Gunakan hash/model untuk reindex idempotent; panggil guard AI sebelum konten keluar.
 
-## Acceptance criteria
+## Kriteria terima
 
-- [ ] Membuat draft, mengedit, dan mempublikasikan menghasilkan baris `document_version` baru
-- [ ] Versi terdahulu tetap bisa dibaca dan tidak berubah
-- [ ] HTML berbahaya di dalam Markdown ter-sanitasi (ada test dengan payload `<script>`)
-- [ ] Blok kode punya penyorotan sintaks dan tombol salin
-- [ ] Semua metadata dari mockup tampil
-- [ ] Halaman dokumen mencapai LCP < 2,5 s dan JS < 150 KB gzip
-- [ ] Kelima state UI ada: loading, kosong, error, tanpa izin, tidak ditemukan
-- [ ] Setiap jalur baca melewati `visibleDocumentsFilter`
+- [ ] Viewer gagal menulis; pemilik/reviewer/admin tunduk matriks aksi termasuk perubahan kategori/klasifikasi.
+- [ ] md/txt sederhana terbaca dan pratinjau aman; PDF/format lain ditolak tanpa parser baru.
+- [ ] Publish sukses menghasilkan versi immutable/current pointer/chunk lengkap; retry dan konflik revision tidak menggandakan versi atau menimpa perubahan lain.
+- [ ] Test scan: pola kredensial/NIK sintetis, konfirmasi revisi, konten berubah membatalkan konfirmasi.
+- [ ] Test kegagalan embed/DB menjaga versi published lama dan tidak mencampur chunk versi.
+- [ ] Anchor heading bertingkat/duplikat stabil, memakai aturan sama di chunker dan viewer; sitasi dapat menuju bagian.
+- [ ] Payload script/HTML berbahaya tersanitasi, termasuk snippet; server tidak mengirim parser ke browser.
+- [ ] Detail tak berizin 404 generik; audit restricted/secret dicatat.
+- [ ] Metadata/kedaluwarsa/state/375 px diuji; tidak ada daftar versi, rollback, feedback dokumen, approval atau object storage.
 
-## Batasan
-
-- Render di server, bukan di klien. Jangan mengirim parser Markdown ke browser.
-- Client component hanya untuk bagian yang benar-benar interaktif.
-- Pakai token dari T-002. Nol warna hardcoded.
-
-## Cara menguji
-
-Buat dokumen berisi Markdown yang rumit: tabel, list bertingkat, blok kode, dan satu tag
-`<script>`. Publikasikan, edit, publikasikan lagi, lalu buka versi lama. Ukur bundle-nya.
+Bukti: unit/integrasi pipeline, test izin, screenshot viewer dan form.

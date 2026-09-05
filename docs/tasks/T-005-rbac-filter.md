@@ -1,53 +1,32 @@
-# T-005: RBAC + `visibleDocumentsFilter` + test kebocoran
+# T-005: Filter SQL dan tujuh test izin
 
-- Pemilik: Orang A · Minggu 1 · Estimasi: 1,5 hari
+Pemilik A. Prasyarat T-003/T-004. Semua jalur baca produk menunggu parent task ini selesai.
 
-> **Task paling penting di proyek ini.** Kalau ini salah, seluruh produk menjadi kewajiban
-> hukum, bukan aset. Kerjakan dengan tenang dan jangan dipercepat.
+## Baca tambahan
 
-## Tujuan
+`docs/rbac-matrix.md`, ADR-0004/0009/0011/0012 hanya bila perlu alasan keputusan.
 
-Satu fungsi yang menegakkan izin di dalam SQL, dipakai oleh setiap jalur baca, dan dijaga
-oleh test kebocoran.
+## Subtask sebelum fitur search/AI
 
-## Konteks
+- T-005a: visibleDocumentsFilter(user): SQL, can(user, action, resource), perbandingan klasifikasi, ai-retrieval-leak.spec.ts. Ini test keamanan pertama; tidak melarang test scaffold/migrasi sebelumnya.
+- T-005b: catalog-visibility.spec.ts, search-visibility.spec.ts, category-scope.spec.ts.
+- T-005c: ai-max-classification.spec.ts, audit-log.spec.ts, melengkapi inactive-user.spec.ts milik T-004.
 
-Baca `docs/rbac-matrix.md` seluruhnya, lalu
-`docs/adr/0004-rbac-and-permission-aware-retrieval.md`.
+Semua nama test berada di tests/rbac/. Batas per PR 8 berkas/400 baris termasuk helper. Jangan memuat tujuh test beserta semua modul dalam satu PR jika melampaui batas.
 
-## Lingkup
+## Batas pembuktian
 
-- `lib/rbac/visible-documents.ts` — `visibleDocumentsFilter(user): SQL`, mengimplementasikan
-  aturan visibilitas persis seperti pada `docs/rbac-matrix.md`.
-- `lib/rbac/can.ts` — pemeriksaan aksi: `canCreateDraft`, `canPublish(categoryId)`,
-  `canManageUsers`, dan seterusnya.
-- Helper perbandingan klasifikasi (`public < internal < restricted < secret`) sebagai fungsi
-  murni, dengan unit test.
-- Guard `AI_MAX_CLASSIFICATION` sebagai fungsi terpisah dan bisa diuji sendiri.
-- Terapkan pada endpoint katalog dan dokumen yang sudah ada.
-- Test suite di `tests/rbac/` sesuai daftar di `docs/rbac-matrix.md`.
+T-005 menguji fragmen izin pada query DB nyata terhadap fixture, full-text dan query jarak vektor memakai embedding tetap sintetis. Adapter konteks memakai spy provider untuk memastikan hasil SQL tak berizin tidak dikirim. Belum mengklaim endpoint search/chat ada. T-006/007/009/011 menambah pengujian integrasi endpoint pada suite yang sama ketika endpoint dibuat. Tidak memakai filter array sebagai pengganti bukti WHERE.
 
-## Acceptance criteria
+## Kriteria terima
 
-- [ ] Filter dihasilkan sebagai SQL dan diterapkan **di dalam** query, bukan setelahnya
-- [ ] `tests/rbac/ai-retrieval-leak.spec.ts` ada dan lulus, walaupun UI chat belum dibuat
-- [ ] Matriks test mencakup 4 role × 4 klasifikasi × (unit sama / unit berbeda)
-- [ ] Dokumen yang tidak terlihat mengembalikan `404`, bukan `403` — tidak membocorkan
-      keberadaannya
-- [ ] Reviewer bisa melihat draft pada kategorinya, dan tidak pada kategori lain
-- [ ] Kontributor selalu bisa melihat draft miliknya sendiri
-- [ ] Test guard `AI_MAX_CLASSIFICATION` lulus untuk keempat nilai
-- [ ] Akses `restricted`/`secret` tercatat di `audit_log`
+- [ ] Ketujuh berkas test wajib lulus sebelum parent task ditutup.
+- [ ] Matriks empat role/empat klasifikasi/status draft-published/cakupan NULL-kosong-dalam-luar sesuai matriks. Admin tidak bypass fungsi.
+- [ ] Filter dijalankan sebelum LIMIT, ranking, total, dan pengiriman konteks.
+- [ ] Draft tidak masuk jalur search/RAG; pemilik draft tetap tunduk maksimum klasifikasi.
+- [ ] Scope hanya mempersempit izin; perubahan kategori/klasifikasi tidak membocorkan chunk lama.
+- [ ] AI_MAX_CLASSIFICATION diuji empat tingkat; error provider tidak menyebabkan bypass.
+- [ ] Audit pembacaan restricted/secret menyimpan referensi, bukan isi.
+- [ ] Fajar ditolak, Viewer Demo berhasil; variasi contributor/reviewer/admin nonaktif di fixture sementara juga ditolak. Sesi lama mengikuti guard T-004.
 
-## Batasan
-
-- **Nol logic izin di dalam prompt LLM.**
-- **Nol penyaringan setelah query** sebagai satu-satunya mekanisme.
-- Jangan menduplikasi aturan visibilitas di file lain. Satu sumber kebenaran.
-
-## Cara menguji
-
-Seed enam pengguna yang mencakup kombinasi role dan clearance, plus dokumen di setiap level
-klasifikasi dan dua unit berbeda. Untuk setiap pengguna, ambil katalog, jalankan search, dan
-tanya AI — lalu bandingkan dengan daftar yang diharapkan. Bila satu saja tidak cocok,
-berhenti dan perbaiki sebelum melanjutkan task lain.
+Nol izin di prompt; nol penyaringan setelah query sebagai satu-satunya pengaman. Detail aturan tidak disalin lagi ke spec ini.
