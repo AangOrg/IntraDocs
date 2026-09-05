@@ -1,68 +1,31 @@
-# T-003: Skema DB + migrasi
+# T-003: Skema, migrasi, fixture minimal
 
-- Pemilik: Orang A · Minggu 0 · Estimasi: 1 hari
+Pemilik A. Prasyarat T-001a dan DB uji Neon/pgvector. Task data lain menunggu seluruh T-003 selesai.
 
-## Tujuan
+## Baca tambahan
 
-Skema yang mendukung RBAC, versi, dan search — disepakati bersama sebelum kedua orang
-bekerja paralel.
+`docs/architecture.md` bagian DB, `docs/rbac-matrix.md` tabel seed, ADR-0006.
 
-> **Ini titik sinkronisasi paling penting di proyek ini.** Bahas berdua sebelum menulis
-> migrasi. Perubahan skema setelah minggu pertama jauh lebih mahal.
+## Subtask berurutan
 
-## Konteks
+- T-003a: user/category/label/document dan migrasi awal; current_version_id boleh nullable sebelum FK tahap berikut.
+- T-003b: document_label/document_version/chunk, FK siklik yang tersisa, indeks GIN/HNSW.
+- T-003c: audit_log/ai_query/conversation/message dan fixture minimal enam pengguna.
 
-Baca `docs/architecture.md`, `docs/rbac-matrix.md`, `docs/api-contract.md`,
-`docs/adr/0006-embedding-dimension.md`.
+Migrasi kumulatif; tepat sebelas tabel domain setelah T-003c, tidak menuntut semuanya di migrasi pertama. Tabel bookkeeping migrasi bukan tabel domain. Setiap PR <=8 berkas kode dan <=400 baris termasuk SQL. Pecah lagi sebelum implementasi bila perlu.
 
 ## Lingkup
 
-Tabel:
+Field minimum mengikuti arsitektur, bukan daftar lama lima belas tabel. Tidak ada user.clearance, invite, job, review, document_file, document_grant atau document_view. Enum status boleh empat nilai; aplikasi MVP hanya menghasilkan draft/published.
 
-- `user` — email, `password_hash`, name, `role`, `clearance`, `unit`, timestamps
-- `invite` — token, email, role, clearance, unit, `expires_at`, `accepted_at`
-- `category` — hierarkis, `parent_id`, slug, urutan
-- `label` — name, slug, color
-- `document` — title, slug, `category_id`, `classification`, `owner_unit`, `owner_user_id`,
-  `status`, `current_version_id`, `review_period_days`, `verified_at`, timestamps
-- `document_label` — relasi banyak-ke-banyak
-- `document_version` — **immutable**: `document_id`, `version`, `content` (Markdown +
-  frontmatter), `content_hash`, `created_by`, `published_at`
-- `document_file` — berkas asli: `file_key`, `mime`, `size`, `sha256`
-- `document_grant` — akses eksplisit per pengguna atau per unit
-- `chunk` — `document_version_id`, `heading_path`, `content`, `token_count`,
-  `embedding vector(1024)`, `embedding_model`, `content_hash`, ditambah salinan
-  `classification` dan `owner_unit`
-- `job` — type, payload, status, attempts, `run_after`, `last_error`
-- `review` — `document_id`, `reviewer_id`, decision, note, timestamps
-- `audit_log` — actor, action, `target_type`, `target_id`, metadata, `created_at`
-- `ai_query` — user, question, `cited_chunk_ids`, `abstained`, latency, feedback
-- `document_view` — untuk peringkat "paling banyak dibaca"
+Kategori/chunk menyimpan category_id untuk filter; query memeriksa induk current_version/published, tidak mengandalkan salinan izin saja. Snapshot versi immutable; draft_markdown disimpan terpisah. ai_query mencatat search maupun ask, role snapshot, jumlah hasil, mode/error/latensi; tidak salah menganggap semua log berasal dari generasi.
 
-Index:
+## Kriteria terima
 
-- GIN `tsvector` pada isi chunk, dengan konfigurasi teks yang sesuai
-- HNSW pada `chunk.embedding`
-- Index komposit yang mendukung predikat izin: `(classification, owner_unit, status)`
-- Index pada `job (status, run_after)`
-
-## Acceptance criteria
-
-- [ ] Migrasi jalan dari database kosong tanpa error
-- [ ] Migrasi bisa dijalankan ulang dengan aman (idempotent)
-- [ ] Ekstensi `pgvector` dibuat oleh migrasi, bukan manual
-- [ ] `document_version` tidak bisa di-update (dijaga trigger atau konvensi + test)
-- [ ] Enum untuk `role`, `classification`, `status`, `job.status`
-- [ ] Semua foreign key punya aturan `ON DELETE` yang eksplisit dan dipikirkan
-- [ ] Ada `EXPLAIN ANALYZE` di deskripsi PR untuk query search dengan predikat izin
-
-## Batasan
-
-- SQL standar saja — tanpa fitur khusus vendor (ADR-0005).
-- Jangan menyimpan isi dokumen di `audit_log`, hanya referensi.
-- `chunk` sengaja didenormalisasi; jelaskan alasannya di komentar skema.
-
-## Cara menguji
-
-Jalankan migrasi pada database kosong, sisipkan data contoh, jalankan query katalog dan
-search dengan predikat izin, periksa rencana query-nya menggunakan index.
+- [ ] Migrasi generate/commit SQL berjalan dari DB kosong; rerun migrator tidak mengulang migrasi. Tidak memakai drizzle-kit push.
+- [ ] Ekstensi vector tersedia; buat via migrasi bila izin memungkinkan, jika tidak dokumentasikan provisioning pemilik tanpa mengaku berhasil.
+- [ ] Tepat sebelas tabel domain dan seluruh FK/ON DELETE/indeks dijelaskan. Versi tidak bisa dimutasi melalui jalur aplikasi dan diuji.
+- [ ] Enam akun persis matriks: lima aktif termasuk Viewer Demo, Fajar nonaktif; seed ulang tidak mengaktifkan Fajar atau menggandakan akun.
+- [ ] Fixture kecil mencakup empat klasifikasi, dua kategori sensitif, draft/published, NULL/kosong/sempit pada scope dalam data uji terisolasi.
+- [ ] Seed T-003 hanya fixture minimal. Korpus 20–25 dokumen milik T-008; tidak ditulis dua kali.
+- [ ] DB integration test membuktikan constraint; EXPLAIN query final ditambahkan T-009, bukan diklaim sudah diuji pada endpoint yang belum ada.
