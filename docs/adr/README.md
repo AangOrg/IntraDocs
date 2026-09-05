@@ -12,9 +12,13 @@ Kalau sebuah keputusan berubah, jangan sunting ADR lama. Tulis ADR baru yang men
 | [0004](0004-rbac-and-permission-aware-retrieval.md) | RBAC dan retrieval sadar izin | Diterima |
 | [0005](0005-deployment-and-portability.md) | Deploy dan portabilitas | Diterima |
 | [0006](0006-embedding-dimension.md) | Dimensi embedding 1024 | Diterima |
-| [0007](0007-mvp-scope-reduction.md) | Pemotongan scope ke MVP satu minggu | Diterima |
+| [0007](0007-mvp-scope-reduction.md) | Pemotongan scope ke MVP satu minggu | Diterima; tenggat diperbarui 0012 |
 | [0008](0008-environments-and-cicd.md) | Lingkungan dan CI/CD | Diterima |
-| [0009](0009-rbac-cakupan-kategori.md) | RBAC dua dimensi: cakupan kategori | Diterima |
-| [0010](0010-chat-multi-turn.md) | Percakapan berlanjut pada AI Assistant | Diterima |
+| [0009](0009-rbac-cakupan-kategori.md) | RBAC dua dimensi: cakupan kategori | Diterima; diperjelas 0012 |
+| [0010](0010-chat-multi-turn.md) | Percakapan berlanjut pada AI Assistant | Diterima; diperjelas 0012 |
+| [0011](0011-visibilitas-dokumen-di-luar-izin.md) | Dokumen di luar izin tidak terlihat | Diterima |
+| [0012](0012-execution-baseline.md) | Baseline eksekusi berbasis mutu | Berlaku setelah rangkaian penyelarasan digabung |
 
 ADR-0009 dan ADR-0010 lahir dari pemeriksaan ulang terhadap layar 9-11 mockup. Latar lengkapnya ada di `docs/mockup-alignment.md`.
+
+ADR-0011 dipertahankan persis dari PR #5. Koreksi atribusi historis dan model aktif dicatat di ADR-0012, bukan menyunting ADR lama.
