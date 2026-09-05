@@ -1,108 +1,55 @@
 # Scope MVP — Mengikat
 
-Berkas ini menang atas `docs/prd.md`, `docs/architecture.md`, dan `docs/context-pack.md` bila terjadi pertentangan. Alasan pemotongan ada di ADR-0007. Penyesuaian setelah pemeriksaan layar 9-11 mockup ada di `docs/mockup-alignment.md`.
-
-Target: MVP bisa diklik pada Jumat, 11 September 2026, dari URL produksi.
+Urutan wewenang: berkas ini > ADR bernomor > `docs/context-pack.md` > dokumen lain. ADR-0012 menyelaraskan baseline eksekusi; ADR-0011 mengunci penyembunyian dokumen di luar izin.
 
 ## Definisi selesai
 
-MVP dinyatakan tercapai bila seluruh butir berikut benar, diperiksa dari URL produksi dan bukan dari localhost.
+Tanggal rilis fleksibel: kualitas lebih utama daripada target kalender lama. MVP bukan klaim siap memakai dokumen perusahaan sungguhan. Seluruh konten/akun demo sintetis. Kelulusan dibuktikan di deployment yang dapat diakses penguji, bukan hanya localhost.
 
-1. Tiga role berbeda masuk dan melihat katalog yang berbeda
-2. Dokumen di luar izin menghasilkan 404, bukan 403
-3. Reviewer dengan cakupan kategori sempit tidak melihat dokumen terbatas dari kategori lain
-4. Pencarian identifier persis dan pencarian parafrase, keduanya tepat
-5. Jawaban AI muncul dengan sitasi yang bisa diklik menuju bagian dokumen
-6. Pertanyaan lanjutan yang tidak berdiri sendiri tetap dijawab benar
-7. Pertanyaan di luar korpus dijawab "tidak ditemukan", bukan dikarang
-8. Viewer tidak bisa memancing isi dokumen terbatas lewat jalur AI
-9. `pnpm test` hijau termasuk seluruh `tests/rbac/`
-10. `pnpm eval` mencetak angka, dan kebocoran bernilai nol
-11. Halaman bisa dibuka dan dibaca di ponsel
-12. Orang lain bisa membukanya lewat URL tanpa dibantu
+1. Empat role aktif bisa login; Fajar nonaktif ditolak. Katalog berbeda sesuai izin, tidak harus berbeda untuk setiap pasangan role.
+2. Dokumen di luar izin mengembalikan 404 tanpa judul/snippet/jumlah tersembunyi.
+3. Reviewer bercakupan sempit tidak menerima dokumen restricted kategori lain melalui katalog, kata kunci, vektor, AI, atau riwayat.
+4. Pencarian identifier dan parafrase bekerja; saat embedding gagal, kata kunci tetap tersedia dengan penanda mode.
+5. Jawaban faktual mempunyai sitasi yang benar, berisi versi dan tautan bagian dokumen; pertanyaan tanpa dasar menghasilkan abstain.
+6. Pertanyaan lanjutan, penyimpanan percakapan, dan scope seluruh KB/kategori/dokumen bekerja tanpa melewati izin.
+7. Form buat/sunting serta publikasi `.md`/`.txt` bekerja, termasuk pemeriksaan sensitif dan indeks sinkron.
+8. `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build` hijau; seluruh suite izin dan integrasi jalur baca lulus.
+9. Seluruh gerbang rilis di bawah lulus; bukti angka, denominasi, lingkungan, dan skenario manual dilampirkan.
+10. Halaman inti terbaca di 375 px dan bisa dinavigasi dengan keyboard; orang lain mengikuti README tanpa bantuan.
+
+## Gerbang mutu — sumber angka tunggal
+
+| Gerbang | Syarat | Konsekuensi gagal |
+| --- | --- | --- |
+| Lanjut integrasi RAG | hit@5 >= 0,70 pada kasus answerable | Perbaiki retrieval sebelum T-011 |
+| Rilis | hit@5 >= 0,85 | Belum lulus rilis walau integrasi boleh lanjut |
+| Keamanan | Kebocoran izin = 0 pada query, prompt, respons, sitasi, dan riwayat | Hentikan merge/rilis yang terdampak |
+| Jawaban | 0 klaim faktual tanpa sitasi yang mendukung; abstain recall >= 0,90 pada kasus wajib abstain | Perbaiki, jangan ganti pertanyaan supaya lulus |
+| Kinerja | p95 search < 500 ms; p95 token pertama < 3 detik | Perbaiki atau ajukan perubahan target, jangan sembunyikan mode gagal |
+
+Metode dan ukuran sampel ada di `docs/eval/README.md`. Retrieval diukur tanpa LLM generasi; mutu jawaban dan token pertama membutuhkan evaluasi end-to-end terpisah. Sepuluh kasus sintetis adalah regression baseline kecil, bukan estimasi akurasi populasi.
 
 ## Masuk MVP
 
-### Identitas dan izin
-
-- Akun lokal, lima pengguna hasil seed, tanpa alur invite
-- Empat role: `viewer`, `contributor`, `reviewer`, `admin`
-- Empat klasifikasi: `public`, `internal`, `restricted`, `secret`
-- Cakupan kategori per pengguna, `NULL` berarti semua kategori (ADR-0009)
-- Penanda aktif atau nonaktif pada pengguna; yang nonaktif tidak bisa masuk
-- Satu filter izin di SQL, dipakai katalog, kedua jalur pencarian, dan RAG
-- Test kebocoran ditulis sebelum jalur AI ada
-
-### Dokumen
-
-- Format `.md` dan `.txt` saja
-- Status `draft` dan `published`; tanpa approval berjenjang
-- Satu kategori per dokumen, banyak label
-- Kategori satu tingkat, tetapi kolom induk sudah ada di skema
-- Viewer dokumen dengan daftar heading dan sitasi yang bisa dituju
-- Form buat dan sunting sederhana
-- Pemeriksaan pola konten sensitif saat publikasi, dengan peringatan yang bisa dilewati sadar
-- Penanda kedaluwarsa sebagai nilai turunan dari `updated_at` dan `review_period_days`
-- Penulisan `audit_log` untuk pembacaan dokumen `restricted` dan `secret`
-
-### Pencarian dan AI
-
-- Hybrid: BM25 lewat tsvector dan vektor lewat pgvector, digabung RRF
-- Halaman hasil pencarian dengan filter kategori
-- Halaman AI Assistant tersendiri
-- Percakapan berlanjut dengan penulisan ulang pertanyaan lanjutan (ADR-0010)
-- Ruang lingkup jawaban: seluruh basis pengetahuan, satu kategori, atau satu dokumen
-- Sitasi wajib pada setiap pernyataan, menyebut dokumen, bagian, dan versi
-- Jalur abstain bila tidak ada dasar yang cukup
-- Umpan balik jempol atas dan bawah
-- Satu baris log per pencarian dan per pertanyaan AI, berisi kueri, jumlah hasil, menjawab atau abstain, dan role penanya
-- Embedding dihitung serentak saat publikasi, tanpa job queue
-- Hanya dokumen `published` yang diindeks
-
-### Antarmuka
-
-- Design token diambil dari variabel CSS mockup, tanpa warna keras di kode
-- `AppShell` dengan sidebar yang menutup di bawah titik potong
-- Komponen bersama dibuat lebih dulu sebelum halaman
-- Setiap daftar punya empat keadaan: memuat, kosong, gagal, tidak berizin
-
-### Kualitas
-
-- Eval sepuluh pertanyaan termasuk pertanyaan di luar korpus
-- Dua puluh sampai dua puluh lima dokumen sintetis, termasuk near-duplicate dan satu dokumen kedaluwarsa
-- `typecheck`, `lint`, `test`, `build` hijau di CI sebelum merge
+- Empat role, empat klasifikasi, cakupan kategori dan status aktif; enam akun seed sesuai `docs/rbac-matrix.md`. Auth.js kredensial; tanpa invite/SSO aktif.
+- Satu filter SQL `visibleDocumentsFilter(user)` dan satu pemeriksa aksi `can(user, action, resource)`; sesi selalu memakai identitas/izin terkini.
+- Sebelas tabel sesuai arsitektur; dokumen satu kategori, banyak label; kategori satu tingkat dengan `parent_id` untuk masa depan.
+- Alur draft ke published tanpa approval. Riwayat versi disimpan immutable, tetapi tidak ada UI riwayat/rollback.
+- Form teks dan masukan `.md`/`.txt` sederhana; berkas dibaca menjadi teks, bukan disimpan sebagai objek. Pratinjau Markdown disanitasi.
+- Heading hierarkis dan anchor stabil; `chunk.heading_path` lengkap. Kedaluwarsa turunan tanggal/periode, bukan status baru.
+- Publikasi: pemindaian pola sensitif, konfirmasi false-positive yang terikat revisi, embedding sinkron, perubahan versi/indeks atomik. Data asli/kredensial sungguhan tetap dilarang.
+- Hybrid full-text + pgvector, RRF, filter kategori. Tidak ada filter lain di MVP.
+- AI Assistant terpisah, scope, multi-turn, riwayat, sitasi berversi, abstain, dan feedback jawaban.
+- `audit_log` untuk pembacaan restricted/secret termasuk penggunaan sumber AI. `ai_query` untuk setiap search/ask, termasuk nol hasil, abstain, mode, error, dan latensi.
+- UI memakai token mockup, AppShell responsif, state loading/kosong/gagal; aksi ditolak 403 hanya bila keberadaan resource boleh diketahui.
+- Korpus 20–25 dokumen sintetis; near-duplicate, dokumen kedaluwarsa, heading bertingkat, semua klasifikasi/kategori; 10 kasus eval baseline.
 
 ## Tidak masuk MVP
 
-Konversi PDF dan DOCX · OCR · job queue · object storage · alur invite · approval berjenjang · UI riwayat versi · permintaan akses · kategori hierarkis · role kustom · konsol admin dan dashboard · pengingat tinjau ulang otomatis · sinkronisasi Active Directory · SSO · notifikasi · pengayaan metadata otomatis · reranker · Docker · rate limit · Playwright · PWA sesungguhnya dengan service worker.
+PDF/DOCX/XLSX/PPTX/HTML/OCR/ZIP ingest, object storage, queue, invite, approval, UI versi, permintaan akses, admin terbatas kategori, kategori hierarkis, role kustom, konsol admin/dashboard, favorit, riwayat baca, topik populer, penghitung popularitas, feedback dokumen, notifikasi, AD/SSO aktif, metadata AI, reranker, Docker/compose, rate limit aplikasi, Playwright sebagai dependensi test, PWA/offline.
 
-## Tambahan opsional
+## Perubahan cakupan
 
-Hanya dikerjakan bila hari 1 sampai 4 selesai tepat waktu. Tidak boleh menyingkirkan pekerjaan pada daftar wajib.
+Tidak ada potongan otomatis. Riwayat percakapan, form, scope, dan heading hierarkis tetap wajib sampai pemilik menyetujui revisi scope. Penyederhanaan tampilan tidak pernah menghapus data heading/sitasi atau melemahkan izin.
 
-1. Usulan ringkasan, kategori, dan label oleh AI saat publikasi
-2. Ekspor jawaban AI menjadi draf dokumen baru
-
-## Urutan potong bila waktu habis
-
-Dipotong dari atas.
-
-1. Penyimpanan riwayat percakapan — chat tetap jalan, riwayatnya tidak tersimpan
-2. Form buat dan sunting di UI — dokumen masuk lewat seed
-3. Selektor ruang lingkup jawaban
-4. Filter selain kategori
-5. Daftar heading hierarkis menjadi datar
-
-## Tidak boleh dipotong
-
-- Filter izin di SQL dan test kebocorannya
-- Sitasi pada setiap jawaban
-- Jalur abstain
-- Penulisan `audit_log` untuk dokumen terbatas — ini persyaratan kepatuhan, bukan fitur
-- Log kueri — biayanya satu `INSERT`, dan tanpanya dashboard fase 2 tidak punya data
-- Dokumen sintetis
-- Deploy yang bisa diakses orang lain
-
-## Aturan yang tidak boleh dilanggar
-
-Seluruh konten dokumen bersifat sintetis dan fiktif. Tidak ada dokumen Telkom asli yang boleh masuk ke lingkungan mana pun yang terhubung API publik. Ini satu-satunya asumsi yang mahal kalau salah.
+Pasca-MVP: usulan metadata AI dan ekspor jawaban menjadi draf dapat ditinjau setelah gerbang rilis lulus. Setiap tambahan menyebut biaya dan apa yang diganti; waktu longgar bukan izin menambah fitur diam-diam.
