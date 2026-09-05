@@ -1,54 +1,29 @@
-# T-002: Design token dari mockup
+# T-002: Token desain dan AppShell
 
-- Pemilik: Orang B · Minggu 0 · Estimasi: 0,5 hari
+Pemilik B. Implementasi setelah T-001a tersedia; inspeksi visual boleh paralel.
 
-## Tujuan
+## Baca tambahan
 
-Seluruh sistem visual mockup tersedia sebagai token Tailwind, **sebelum** ada komponen yang
-ditulis.
+`docs/ui-inventory.md`; bila perlu mockup root `intradocs-mockup_1.html` hanya rentang CSS atau screen yang relevan. Jangan memakai path design/mockup yang tidak ada.
 
-## Kenapa ini dikerjakan lebih dahulu
+## Subtask
 
-Kalau token belum ada, setiap agent AI akan mengarang warna, radius, dan shadow sendiri di
-setiap file. Itu penyebab utama UI yang terlihat seperti tempelan, dan sangat mahal untuk
-dirapikan setelah 20 komponen dibuat. Dengan token, aturan "nol hex hardcoded" di
-`AGENTS.md` menjadi bisa ditegakkan otomatis.
-
-## Konteks
-
-Baca `design/mockup/intradocs-mockup_1.html`, khususnya blok `:root` di dalam `<style>`.
-Baca juga `docs/ui-inventory.md`.
+- T-002a: token Tailwind, radius/shadow, Inter self-hosted melalui next/font, sprite ikon dari mockup, halaman dev token.
+- T-002b: AppShell topbar 56px/sidebar 240px, navigasi responsif, Badge dan state dasar untuk dipakai ulang.
 
 ## Lingkup
 
-- Ekstrak semua CSS variable menjadi `tailwind.config.ts`: skala `blue-50..900`, `ink`,
-  `ink-2`, `muted`, `muted-2`, `line`, `line-2`, `bg`, `white`, ditambah pasangan semantik
-  `green`/`green-bg`, `amber`/`amber-bg`, `red`/`red-bg`, `violet`/`violet-bg`.
-- Radius (`r`, `r-lg`) dan shadow (`sh-sm`, `sh`, `sh-md`, `sh-lg`).
-- Font Inter melalui `next/font` (self-hosted, bukan CDN).
-- Sprite SVG ikon sebagai satu komponen React, mempertahankan pola `<use href="#ic-*">`
-  dari mockup.
-- Petakan klasifikasi ke warna semantik: Publik → hijau, Internal → biru, Terbatas → amber,
-  Rahasia → merah. Konsisten di seluruh aplikasi.
-- Satu halaman `/dev/tokens` yang menampilkan semua token dan ikon secara visual.
+Semua nilai desain mengikuti ui-inventory/mockup. Tidak memakai warna keras di komponen atau menambah icon library. Primitif lain dibuat ketika task pemakainya membutuhkan, bukan satu pustaka besar sekaligus.
 
-## Di luar lingkup
+Sidebar menutup di bawah md, dapat dibuka/ditutup dengan keyboard, fokus kembali ke pemicu. Rute nyata hanya /, /katalog, /cari, /unggah, /ai-assistant dan pembaca dokumen; tautan admin yang belum ada tidak ditampilkan sebagai fitur aktif.
 
-Komponen fitur. Hanya token, ikon, dan primitif.
+## Kriteria terima
 
-## Acceptance criteria
+- [ ] Token/ikon dibandingkan dengan rentang mockup yang tepat; tidak mendesain ulang.
+- [ ] AppShell terbaca pada 375 px dan desktop; navigasi keyboard berfungsi.
+- [ ] Badge klasifikasi memenuhi kontras WCAG AA dan istilah UI benar.
+- [ ] Memuat/kosong/gagal tersedia; resource tersembunyi menuju 404, bukan PermissionDeniedState.
+- [ ] Halaman dev token hanya tersedia di development, bukan menu produk produksi.
+- [ ] Tidak ada PWA/service worker atau dependensi UI baru tanpa persetujuan.
 
-- [ ] Semua CSS variable dari mockup punya padanan token Tailwind
-- [ ] `/dev/tokens` menampilkan seluruh warna, radius, shadow, dan ikon
-- [ ] Nol warna hardcoded di luar `tailwind.config.ts`
-- [ ] Badge klasifikasi memenuhi kontras WCAG AA
-- [ ] Tanpa icon library sebagai dependensi
-
-## Batasan
-
-- Jangan mendesain ulang. Cocokkan mockup.
-- Jangan menambah dependensi UI di luar shadcn/ui.
-
-## Cara menguji
-
-Buka `/dev/tokens` dan mockup bersebelahan. Warna dan bentuk harus cocok.
+Bukti: screenshot viewport desktop/375 px dan test komponen perilaku sidebar.

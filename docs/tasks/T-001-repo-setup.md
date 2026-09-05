@@ -1,50 +1,33 @@
-# T-001: Repo setup, CI, docker-compose
+# T-001: Scaffold, CI, deploy
 
-- Pemilik: Orang A · Minggu 0 · Estimasi: 1 hari
+Pemilik A. Prasyarat: baseline dokumen digabung; Neon/Vercel dari pemilik. Tidak ada tenggat tetap.
 
-## Tujuan
+## Baca tambahan
 
-Siapa pun bisa melakukan clone lalu menjalankan seluruh stack dengan dua perintah. CI
-menolak kode yang tidak bisa dikompilasi.
+`docs/environments.md` untuk kredensial/deploy; jika bertentangan, scope dan ADR-0007/0012 menang.
 
-## Konteks
+## Subtask berurutan
 
-Baca `docs/architecture.md`, `docs/adr/0001-tech-stack.md`, `docs/adr/0005-deployment-and-portability.md`.
+- T-001a: Next.js 15 App Router, TypeScript strict, pnpm, lint/format/test runner, scripts typecheck/lint/test/build; output standalone.
+- T-001b: CI empat pemeriksaan, env validation zod, README setup, deployment preview/production. Masing-masing PR maksimal 8 berkas kode/400 baris; pecah rencana lagi sebelum coding bila hasil scaffold melebihi batas.
 
-## Lingkup
+## Lingkup dan batas
 
-- Next.js 15 App Router, TypeScript **strict**, pnpm, `.nvmrc`.
-- Struktur folder sesuai `docs/context-pack.md`.
-- ESLint + Prettier, aturan minimal tetapi ditegakkan.
-- `docker-compose.yml`: Postgres 16 + pgvector, MinIO. Volume persisten.
-- `Dockerfile` multi-stage dengan Next.js `output: 'standalone'`.
-- `.env.example` berisi semua variabel dengan komentar, tanpa nilai rahasia.
-- Validasi env saat startup (zod) — gagal cepat dengan pesan jelas bila ada yang kurang.
-- GitHub Actions: `typecheck` → `lint` → `test` → `build`, ditambah job mingguan
-  `docker compose up` + cek `/api/health`.
-- Branch protection pada `main`: wajib PR, wajib CI hijau, tanpa force-push.
-- Pindahkan `intradocs-mockup_1.html` ke `design/mockup/` agar tidak ikut ter-build.
+Auth, skema, UI fitur milik task lain. Tidak membuat Dockerfile/compose, MinIO, storage, queue, atau job mingguan Docker. Jangan memindahkan mockup; sumber tetap `intradocs-mockup_1.html` di root. Tidak pernah membukanya utuh.
 
-## Di luar lingkup
+`.env.example` tanpa secret; nama/letak variable mengikuti environments. `AI_MAX_CLASSIFICATION=secret` hanya untuk data sintetis. Validasi secret AI saat jalur AI diaktifkan, bukan memblokir halaman scaffold yang belum memakai AI.
 
-Skema database (T-003), autentikasi (T-004), komponen UI (T-002).
+Branch protection dikonfigurasi pemilik/admin; jangan mengklaim sudah aktif tanpa memeriksa. Tidak merge otomatis.
 
-## Acceptance criteria
+## Kriteria terima
 
-- [ ] `docker compose up` lalu `pnpm dev` → aplikasi berjalan di `localhost:3000`
-- [ ] `pnpm typecheck && pnpm lint && pnpm test && pnpm build` semuanya hijau
-- [ ] `docker build` menghasilkan image yang bisa dijalankan
-- [ ] Menghapus satu env wajib → startup gagal dengan pesan yang menyebut nama variabelnya
-- [ ] CI berjalan pada PR dan memblokir merge saat gagal
-- [ ] `README.md` berisi setup yang bisa diikuti orang lain tanpa bertanya
+- [ ] Fresh install mengikuti README, `pnpm dev` jalan tanpa Docker.
+- [ ] typecheck/lint/test/build hijau; ada smoke test bermakna, bukan test kosong agar CI hijau.
+- [ ] CI PR menjalankan empat pemeriksaan termasuk build; build gagal terlihat.
+- [ ] Env wajib pada fitur aktif gagal dengan pesan nama variable, tanpa mencetak nilainya.
+- [ ] URL preview/production scaffold dapat dibuka; DB/provider belum siap ditulis sebagai blocker, bukan ditandai selesai.
+- [ ] Region fungsi dan DB disamakan; pemilik melengkapi secret via pengaturan layanan, bukan chat/repo.
 
-## Batasan
+## Bukti
 
-- Tanpa Redis, tanpa dependensi tambahan di luar ADR-0001.
-- `runtime = 'nodejs'` eksplisit pada route handler.
-- Tanpa `any` di TypeScript.
-
-## Cara menguji
-
-Hapus `node_modules` dan volume Docker, lalu ikuti README dari nol seolah-olah baru pertama
-kali. Kalau ada langkah yang tidak tertulis, README-nya belum selesai.
+Lampirkan hasil perintah dan URL deploy; pembaruan STATUS hanya oleh chat eksekusi maksimal 15 baris.
