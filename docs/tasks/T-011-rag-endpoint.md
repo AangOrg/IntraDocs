@@ -1,48 +1,30 @@
-# T-011 — Endpoint RAG
+# T-011: Endpoint AI bersitasi dan riwayat aman
 
-Hari 5 · orang A · perkiraan sehari penuh
+Pemilik A; prasyarat T-009 lulus gerbang integrasi, T-004/T-005, pipeline T-006b.
 
-Ini task paling berisiko di seluruh sprint. Kalau ada yang meleset, meleset di sini.
+## Baca tambahan
 
-## Tujuan
+API bagian AI, matriks riwayat, ADR-0010/0012.
 
-Endpoint chat yang menjawab dalam bahasa Indonesia, selalu menyertakan sumber, dan mengatakan tidak tahu ketika memang tidak ada jawabannya.
+## Subtask berurutan
 
-## Prasyarat
+- T-011a: ownership percakapan/pesan, izin ulang sumber, endpoints riwayat dan test lintas pengguna.
+- T-011b: AiProvider.chat, kondensasi maksimal dua putaran, retrieval berscope, threshold/abstain dan spy prompt.
+- T-011c: POST /api/ai/ask SSE, feedback/logging, integrasi end-to-end provider terkontrol.
 
-T-009 selesai. Retrieval dipakai ulang, tidak ditulis ulang.
-
-## Baca dulu
-
-ADR-0010 · ADR-0003 · `docs/api-contract.md`
-
-## Berkas yang disentuh
-
-`app/api/chat/route.ts` · `lib/ai/rag.ts` · `lib/ai/prompt.ts` · `lib/ai/condense.ts` · `tests/rbac/ai-retrieval-leak.spec.ts` (sudah ada, tambahkan kasus)
-
-## Langkah
-
-1. `POST /api/chat` menerima `conversationId` opsional, `question`, dan `scope` opsional. `runtime = 'nodejs'`, `maxDuration = 60`.
-2. **Kondensasi.** Kalau percakapan sudah punya giliran sebelumnya, panggil LLM sekali untuk menulis ulang pertanyaan jadi mandiri. Contoh nyata dari mockup: "Kalau perangkat authenticator-nya hilang bagaimana?" harus jadi pertanyaan yang berdiri sendiri sebelum dicari. Batasi ke 3 giliran terakhir. Kalau tidak ada giliran sebelumnya, lewati langkah ini seluruhnya — jangan buang satu panggilan LLM untuk pertanyaan pertama.
-3. Ambil potongan lewat retrieval T-009, dibatasi `visibleDocumentsFilter` dan `AI_MAX_CLASSIFICATION`.
-4. Kalau potongan teratas di bawah ambang relevansi, **jangan panggil LLM sama sekali**. Kirim jawaban abstain yang sudah ditentukan. Ini menghemat biaya sekaligus menutup jalur mengarang yang paling umum.
-5. Susun prompt: instruksi bahasa Indonesia, potongan bernomor beserta judul dokumen dan `heading_path`, aturan bahwa setiap klaim wajib memakai penanda `[n]`, dan aturan bahwa kalau konteks tidak memuat jawabannya maka jawab tidak menemukan.
-6. Alirkan SSE dengan urutan `sources` → `token` → `done`, dan `error` bila gagal. `sources` dikirim **lebih dulu** supaya UI bisa menampilkan sumber sebelum teks selesai.
-7. Simpan ke `conversation` dan `message`. Kalau waktu habis, bagian ini yang pertama dipotong — endpoint tetap berfungsi tanpa penyimpanan.
-8. Catat `ai_query`: pertanyaan, jumlah dokumen dirujuk, menjawab atau abstain, role.
+Route hanya app/api/ai/ask/route.ts. Body/scope/meta/sources/token/done/error persis kontrak; runtime nodejs, uji batas durasi deployment. Jangan membuat alias /api/chat.
 
 ## Kriteria terima
 
-- Pertanyaan yang jawabannya ada di korpus menghasilkan jawaban dengan minimal satu sitasi yang benar-benar mengarah ke dokumen yang dipakai.
-- Pertanyaan di luar korpus menghasilkan abstain, bukan karangan.
-- Pertanyaan lanjutan yang tidak mandiri tetap mengambil dokumen yang benar.
-- Viewer dan admin mendapat jawaban berbeda untuk pertanyaan yang menyentuh dokumen terbatas.
-- Token pertama muncul di bawah 3 detik.
+- [ ] Awal percakapan mengembalikan conversationId melalui event meta sebelum sources/token; lanjutan memakai ID yang sama.
+- [ ] User B tak dapat membaca/memakai conversationId/aiQueryId milik A; 404 generik.
+- [ ] Perubahan role/cakupan, penonaktifan, sumber dihapus/diarsipkan, atau batas AI diperketat menolak riwayat sebelum kondensasi maupun respons. Tidak cukup menyembunyikan citation chip.
+- [ ] Scope all/category/document mempersempit query; id dokumen tak berizin 404. Pertanyaan dokumen terbuka benar-benar memakai scope, bukan hanya menyalin judul ke prompt.
+- [ ] Retrieval tidak mengembalikan draft/chunk versi lama; konteks selalu memakai identitas asli.
+- [ ] Tanpa konteks cukup, generasi jawaban dilewati dan abstain dikirim. Kondensasi yang diperlukan sebelumnya tidak disebut nol panggilan LLM.
+- [ ] Semua klaim faktual didukung sitasi; citation punya versi, headingPath, anchor/href tervalidasi.
+- [ ] Histori memakai maksimal dua putaran; teks dokumen diperlakukan data, tidak instruksi.
+- [ ] Error sebelum/di tengah stream ditangani tanpa done palsu; retry tidak menggandakan pesan user/requestId.
+- [ ] ai_query kind=ask/log audit sumber ditulis; retrieval internal tidak membuat log search tambahan.
 
-## Test
-
-Tambahkan ke `tests/rbac/ai-retrieval-leak.spec.ts`: isi dokumen terbatas tidak pernah muncul di potongan yang dikirim ke LLM untuk pengguna yang tidak berhak. **Periksa muatan prompt-nya, bukan hanya teks jawabannya.** Jawaban yang kebetulan tidak menyebut isi rahasia tetap kebocoran kalau isinya sempat masuk prompt.
-
-## Di luar ruang lingkup
-
-Tool calling, agent, multi-hop retrieval, reranker, caching jawaban, streaming sitasi per token.
+Tambahkan kasus ke tests/rbac/ai-retrieval-leak.spec.ts dan suite riwayat: periksa payload ke provider, bukan jawaban saja. Pengukuran mutu nyata milik T-013, bukan klaim dari stub provider.
