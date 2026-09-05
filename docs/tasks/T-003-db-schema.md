@@ -71,9 +71,13 @@ Index:
 Ketujuh test wajib di `docs/rbac-matrix.md` ditulis pada hari 2. Skema dan fixture harus
 sudah bisa menopangnya tanpa migrasi tambahan.
 
-- [ ] Fixture menyediakan **enam** pengguna: kelima pengguna pada tabel `docs/rbac-matrix.md`
-      ditambah satu pengguna dengan `is_active = false` — prasyarat
-      `tests/rbac/inactive-user.spec.ts`. Tanpa pengguna keenam ini, test itu lahir tanpa data
+- [ ] Fixture menyediakan tepat **enam** pengguna sesuai seluruh tabel `docs/rbac-matrix.md`:
+      **lima aktif dan satu nonaktif**, bukan enam pengguna ditambah satu lagi
+- [ ] Fajar Nugroho adalah fixture nonaktif: `role = viewer`, unit **Finance (mitra)**,
+      cakupan kategori **SOP & Proses Bisnis**, `is_active = false` — prasyarat
+      `tests/rbac/inactive-user.spec.ts`, sesuai layar 8 mockup
+- [ ] **Viewer Demo** adalah akun sintetis aktif: `role = viewer`, unit **Demo**,
+      `category_scope = NULL`, `is_active = true` — kontrol positif login dan akun demo
 - [ ] Fixture menyediakan dokumen `restricted` di **dua kategori berbeda** — prasyarat
       `tests/rbac/category-scope.spec.ts`, agar cakupan sempit Dwi Kurniawan bisa dibuktikan
 - [ ] Fixture menyediakan dokumen pada keempat klasifikasi dan dua `owner_unit` berbeda

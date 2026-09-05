@@ -56,8 +56,12 @@ kelima. Kalau keduanya berbeda, `docs/rbac-matrix.md` yang benar.
 - [ ] `tests/rbac/ai-max-classification.spec.ts` — batas klasifikasi jalur AI dihormati,
       diuji untuk keempat nilai
 - [ ] `tests/rbac/audit-log.spec.ts` — pembacaan dokumen `restricted` dan `secret` tercatat
-- [ ] `tests/rbac/inactive-user.spec.ts` — pengguna nonaktif tidak bisa masuk. Butuh pengguna
-      keenam pada fixture T-003
+- [ ] `tests/rbac/inactive-user.spec.ts` — Fajar Nugroho (`viewer`, `is_active = false`)
+      ditolak saat login dengan `401` tanpa membuat sesi, meski kredensial benar. **Viewer Demo**
+      (`viewer`, aktif) berhasil login sebagai kontrol positif. Ulangi penolakan pada salinan
+      fixture `contributor`, `reviewer`, dan `admin` dengan `is_active = false`, agar penanda
+      nonaktif terbukti mengalahkan role yang boleh menulis. Salinan ini hanya data uji
+      terisolasi; seed T-003 tetap enam pengguna
 
 ## Batasan
 
@@ -68,8 +72,10 @@ kelima. Kalau keduanya berbeda, `docs/rbac-matrix.md` yang benar.
 
 ## Cara menguji
 
-Seed enam pengguna sesuai fixture T-003 — lima pengguna pada `docs/rbac-matrix.md` ditambah
-satu pengguna nonaktif — plus dokumen di setiap level klasifikasi dan dua unit berbeda. Untuk
-setiap pengguna, ambil katalog, jalankan search, dan tanya AI, lalu bandingkan dengan daftar
-yang diharapkan. Bila satu saja tidak cocok, berhenti dan perbaiki sebelum melanjutkan task
-lain.
+Seed tepat enam pengguna sesuai tabel `docs/rbac-matrix.md` dan fixture T-003: lima aktif
+(termasuk **Viewer Demo**) serta Fajar Nugroho yang nonaktif, plus dokumen di setiap level
+klasifikasi dan dua unit berbeda. Untuk lima pengguna aktif, ambil katalog, jalankan search,
+dan tanya AI, lalu bandingkan dengan daftar yang diharapkan. Untuk Fajar, pastikan login
+berkredensial benar tetap ditolak dengan `401` dan tidak menghasilkan sesi. Jalankan juga
+variasi role nonaktif pada fixture terisolasi di atas. Bila satu saja tidak cocok, berhenti
+dan perbaiki sebelum melanjutkan task lain.

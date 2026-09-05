@@ -100,13 +100,13 @@ Ditulis pada hari 2, sebelum jalur AI dibangun. Ketujuhnya juga jadi kriteria te
 | `tests/rbac/category-scope.spec.ts` | Reviewer dengan cakupan sempit tidak menerima dokumen terbatas dari kategori lain, lewat katalog, pencarian, maupun AI |
 | `tests/rbac/ai-max-classification.spec.ts` | Batas klasifikasi jalur AI dihormati |
 | `tests/rbac/audit-log.spec.ts` | Pembacaan dokumen terbatas tercatat |
-| `tests/rbac/inactive-user.spec.ts` | Pengguna nonaktif tidak bisa masuk |
+| `tests/rbac/inactive-user.spec.ts` | Pengguna nonaktif ditolak saat login meski kredensial benar, pada setiap role; Fajar Nugroho adalah fixture permanennya |
 
 ## Pengguna seed
 
 Dipilih agar setiap perbedaan izin terlihat saat demo, dan agar peninjau bisa berganti role sendiri.
 
-Enam baris, bukan lima. Kolom klasifikasi bukan kolom basis data — nilainya diturunkan dari `role` lewat tabel "Klasifikasi maksimum per role" di atas, dan ditulis di sini hanya sebagai pengingat saat membaca demo.
+Tepat **enam pengguna: lima aktif dan satu nonaktif**. Lima nama berasal dari mockup; **Viewer Demo** adalah akun sintetis tambahan, bukan pengguna yang diklaim ada di layar 8. Kolom klasifikasi bukan kolom basis data — nilainya diturunkan dari `role` lewat tabel "Klasifikasi maksimum per role" di atas, dan ditulis di sini hanya sebagai pengingat saat membaca demo.
 
 | Nama | Role | Klasifikasi (turunan `role`) | Cakupan kategori | Status |
 | --- | --- | --- | --- | --- |
@@ -114,9 +114,13 @@ Enam baris, bukan lima. Kolom klasifikasi bukan kolom basis data — nilainya di
 | Andi Wijaya | `admin` | `secret` | Semua | Aktif |
 | Dwi Kurniawan | `reviewer` | `restricted` | Keamanan Informasi saja | Aktif |
 | Rizky Ananda | `contributor` | `restricted` | Infrastruktur, Data dan Integrasi | Aktif |
-| Fajar Nugroho | `viewer` | `internal` | Semua | Aktif |
-| Sari Puspita | `contributor` | `restricted` | Infrastruktur | **Nonaktif** (`is_active = false`) |
+| Fajar Nugroho | `viewer` | `internal` | SOP & Proses Bisnis (baca) | **Nonaktif** (`is_active = false`) |
+| Viewer Demo (sintetis) | `viewer` | `internal` | Semua | Aktif |
 
 Dwi Kurniawan adalah pengguna terpenting untuk demo: dialah yang membuktikan bahwa izin punya dua dimensi, bukan satu.
 
-Sari Puspita ada untuk satu alasan saja: `tests/rbac/inactive-user.spec.ts` butuh pengguna nonaktif, dan tanpa baris ini test itu lahir tanpa data. Rolenya sengaja `contributor`, bukan `viewer`, supaya yang dibuktikan adalah penanda nonaktif menang atas role yang seharusnya boleh menulis. Ia bukan pengguna demo: lima pengguna pertama yang dipakai saat presentasi, dan Sari tidak akan pernah berhasil masuk.
+Fajar Nugroho mengikuti layar 8: `viewer`, unit **Finance (mitra)**, status nonaktif, dan cakupan "SOP & Proses (baca)". Nama kategori itu dipetakan ke kategori seed **SOP & Proses Bisnis**; kata "(baca)" menjelaskan izin viewer, bukan kategori baru. Cakupan tersebut tidak mengubah aturan ADR-0009: dokumen `public` dan `internal` tetap terlihat lintas kategori bagi pengguna aktif. Fajar ditolak karena `is_active = false`, bukan karena kategorinya atau karena viewer tidak boleh menulis.
+
+**Viewer Demo** memakai unit **Demo**, `is_active = true`, dan `category_scope = NULL` (semua kategori). Akun ini menggantikan peran viewer aktif untuk demo dan menjadi kontrol positif login pada `tests/rbac/inactive-user.spec.ts`. Empat pengguna aktif lainnya tetap seperti pada tabel; Fajar hanya dipakai untuk skenario penolakan login. Semua akun dan identitas di seed bersifat sintetis.
+
+Pengujian penanda nonaktif pada role yang boleh menulis tetap dipertahankan: T-005 memakai salinan fixture sementara untuk `contributor`, `reviewer`, dan `admin` dengan `is_active = false`. Itu data uji terisolasi, bukan tambahan pengguna pada seed. Rencana seed tetap enam pengguna dan tidak lagi memakai Sari Puspita.

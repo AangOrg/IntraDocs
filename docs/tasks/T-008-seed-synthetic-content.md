@@ -16,7 +16,8 @@ search. Ketiga, dokumen ini sekaligus menjadi eval set (`docs/eval/`).
 
 ## Konteks
 
-Baca `docs/adr/0003-ai-provider-and-data-classification.md` dan `docs/eval/README.md`.
+Baca `docs/adr/0003-ai-provider-and-data-classification.md`, `docs/eval/README.md`, dan tabel
+pengguna seed di `docs/rbac-matrix.md` sebagai acuan tunggal identitas, role, cakupan, dan status.
 Ambil gaya penulisan, penomoran, dan struktur dari mockup.
 
 ## Lingkup
@@ -36,9 +37,11 @@ Ambil gaya penulisan, penomoran, dan struktur dari mockup.
 - Heading bertingkat sampai tiga tingkat pada minimal tiga dokumen, agar `chunk.heading_path`
   dan sitasi "Bagian 2.1.2" punya bahan uji yang sungguhan.
 - Minimal dua dokumen `restricted` pada dua kategori berbeda, agar cakupan kategori bisa diuji.
-- `scripts/seed.ts` — idempotent: memuat dokumen, kategori, label, dan **enam** pengguna:
-  kelima pengguna pada tabel `docs/rbac-matrix.md` ditambah satu pengguna dengan
-  `is_active = false` untuk `tests/rbac/inactive-user.spec.ts`.
+- `scripts/seed.ts` — idempotent: memuat dokumen, kategori, label, dan tepat **enam** pengguna
+  sesuai seluruh tabel `docs/rbac-matrix.md`: lima aktif dan **Fajar Nugroho nonaktif**
+  (`viewer`, unit Finance (mitra), cakupan SOP & Proses Bisnis, `is_active = false`).
+  **Viewer Demo** adalah akun sintetis aktif pengganti untuk demo dan kontrol positif login,
+  bukan pengguna ketujuh. Tidak ada pengguna nonaktif tambahan di luar tabel tersebut.
 
 ## Acceptance criteria
 
@@ -47,7 +50,12 @@ Ambil gaya penulisan, penomoran, dan struktur dari mockup.
 - [ ] Panjang dokumen bervariasi: ada yang satu halaman, ada yang panjang
 - [ ] Sepuluh pertanyaan eval di `docs/eval/questions.jsonl` bisa dijawab dari korpus ini,
       termasuk satu pertanyaan yang sengaja **di luar** korpus untuk menguji jalur abstain
-- [ ] Enam pengguna seed ada, termasuk satu yang nonaktif dan satu reviewer bercakupan sempit
+- [ ] Tepat enam pengguna seed sesuai `docs/rbac-matrix.md`: lima aktif dan satu nonaktif,
+      dengan Dwi Kurniawan tetap reviewer aktif bercakupan Keamanan Informasi saja
+- [ ] Fajar Nugroho tetap `viewer` nonaktif dengan unit Finance (mitra) dan cakupan SOP & Proses
+      Bisnis setelah seed dijalankan ulang; tidak diaktifkan kembali sebagai akun demo
+- [ ] **Viewer Demo** tetap `viewer` aktif dengan unit Demo dan `category_scope = NULL` setelah
+      seed dijalankan ulang; akun sintetis ini adalah pengganti viewer aktif untuk demo
 - [ ] **Nol data Telkom asli.** Semua nama orang, sistem, dan angka bersifat fiktif
 - [ ] Frontmatter valid dan lolos validasi zod
 - [ ] Tidak ada angka dari mockup yang ikut tersalin sebagai fakta (1.284 dokumen, 318
