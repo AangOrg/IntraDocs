@@ -1,74 +1,39 @@
-# Eval harness
+# Eval harness — metode, bukan angka pemasaran
 
-## Kenapa ini wajib ada
+Scope adalah sumber ambang mutu. Baseline kecil membuktikan regresi pada korpus sintetis, bukan akurasi umum model. Tidak mengambil pertanyaan helpdesk/chat internal atau data perusahaan sungguhan.
 
-Tanpa eval, "AI-nya bagus" hanyalah perasaan. Setiap perubahan pada chunking, prompt,
-embedding, atau bobot RRF menjadi tebakan, dan kualitas bergerak naik-turun tanpa ada yang
-sadar sampai pengguna mengeluh.
+## Data
 
-Mockup menampilkan angka **96% akurasi jawaban AI** di hero. Angka itu placeholder. Aturan
-proyek ini: **jangan pernah menampilkan angka akurasi yang tidak dihasilkan oleh harness
-ini.** Kalau angkanya belum diukur, jangan tampilkan sama sekali.
+T-008 membuat docs/eval/questions.jsonl: tepat 10 kasus sintetis, 8 answerable (termasuk 2 parafrase) dan 2 outside-corpus. questions.example.jsonl hanya contoh format, bukan hasil eval atau korpus final.
 
-Eval juga yang membuat ADR-0003 bisa dijalankan: ketika provider AI final ditentukan, kita
-bisa mengukur apakah kualitasnya naik atau turun, bukan berdebat.
+Field: id unik, q, actor (nama akun seed aktif), expect_docs (slug dokumen yang diizinkan), should_abstain boolean, expected_points (array pokok jawaban). Tidak ada clearance dari input; harness memuat aktor/role/scope terkini dari fixture DB. Fajar bukan aktor query berhasil.
 
-## Format
+Semua expect_docs harus resolve ke dokumen fixture yang tepat. Untuk abstain daftar kosong. Jangan mengganti pertanyaan/ground truth agar model lulus. Tambahan kasus gagal disimpan sebagai suite regresi tambahan dan dilaporkan terpisah dari baseline beku.
 
-`docs/eval/questions.jsonl` — satu pertanyaan per baris:
+## Dua lapisan
 
-```json
-{"q": "bagaimana cara reset password domain?", "expect_docs": ["SOP-IT-014"], "expect": "self-service portal, verifikasi OTP", "role": "viewer", "clearance": "internal"}
-```
+- T-009: pnpm eval --retrieval → scripts/eval-retrieval.ts, retrieval nyata tanpa generasi; boleh memanggil embedding. Laporkan top-5 slug dan hit setiap kasus.
+- T-013: pnpm eval → scripts/eval.ts, jawaban nyata + pemeriksaan manusia terhadap dukungan klaim/sitasi/abstain. Opsi --retrieval tetap memilih mode sebelumnya.
+- Keamanan: pnpm test mencakup query/guard serta integrasi endpoint, spy payload provider, ownership, perubahan izin, sesi nonaktif, dan multi-turn. Tidak bergantung pada model kebetulan tidak mengucapkan rahasia.
 
-| Field | Arti |
+## Definisi pengukuran
+
+| Metrik | Pembilang / penyebut atau metode |
 | --- | --- |
-| `q` | Pertanyaan, ditulis seperti pengguna sungguhan menulisnya |
-| `expect_docs` | Dokumen yang seharusnya muncul sebagai sitasi |
-| `expect` | Kata kunci yang harus ada di jawaban yang benar |
-| `role`, `clearance` | Konteks pengguna — supaya eval juga menguji RBAC |
-| `should_abstain` | `true` untuk pertanyaan di luar korpus |
+| hit@5 | Kasus answerable dengan setidaknya satu expect_doc di top-5 / 8 |
+| Abstain recall | Kasus wajib abstain yang benar-benar abstain / 2 |
+| Unsupported claims | Jumlah klaim faktual tanpa sitasi yang benar-benar mendukungnya; review manusia |
+| RBAC leak | Jumlah kasus yang membocorkan judul/snippet/teks/metadata/riwayat ke respons atau provider |
+| p95 search/first token | Distribusi durasi endpoint dan waktu menuju token pertama, bukan waktu sources/meta |
 
-## Cara membuat eval set
+Dengan denominator kecil, satu kegagalan sangat berarti: hit@5 bergerak 1/8; abstain 1/2. Ini bukan confidence interval akurasi produksi. Laporkan false abstain pada kasus answerable juga, bukan hanya keberhasilan abstain.
 
-**Ambil 30 pertanyaan nyata dari helpdesk atau grup chat internal.** Ini pekerjaan
-non-coding yang bisa dan sebaiknya dimulai hari ini — tidak perlu menunggu kode siap, dan
-nilainya jauh lebih tinggi daripada pertanyaan karangan.
+Latency: minimal 30 request terukur per endpoint, campuran pertanyaan tetap; pisahkan cold/warm, first/follow-up, hybrid/keyword. Laporkan n, error/timeout, lingkungan/region, model dan commit. Jangan menghapus request lambat diam-diam. Tidak ada klaim p95 dari satu panggilan. Abstain tanpa token dicatat terpisah sebagai latency respons, bukan token pertama cepat palsu.
 
-Komposisi yang disarankan:
+## Gerbang dan bukti
 
-- 20 pertanyaan yang jawabannya ada di korpus
-- 5 pertanyaan parafrase (kata-kata berbeda, dokumen sama) — menguji jalur vector
-- 5 pertanyaan yang jawabannya **tidak ada** (`should_abstain: true`) — menguji kejujuran
-- Beberapa pertanyaan mengarah ke dokumen `restricted` dengan `role: viewer` — menguji
-  bahwa sistem menolak dengan benar
+Ambang integrasi/rilis ada di docs/scope-mvp.md. Gagal integrasi menghentikan T-011; lolos integrasi belum berarti lolos rilis. Satu kebocoran memblokir merge/rilis yang terdampak.
 
-Lima pertanyaan abstain adalah bagian terpenting. Sistem RAG yang tidak pernah berkata
-"tidak tahu" akan berhalusinasi, dan halusinasi pada dokumentasi internal lebih buruk
-daripada tidak ada jawaban — pengguna akan mengikuti prosedur yang salah.
+Lampirkan hasil per kasus, denominator, model, tanggal, commit, biaya/panggilan bila diketahui, serta penilaian sitasi manusia di artefak PR. Jangan menimpa dokumen metode ini dengan angka tanpa provenance.
 
-## Metrik
-
-| Metrik | Target v1.0 | Arti |
-| --- | --- | --- |
-| `hit@5` | >= 0,85 | Dokumen yang benar ada di lima sitasi teratas |
-| `citation_rate` | 1,00 | Tidak ada klaim tanpa sitasi |
-| `abstain_precision` | >= 0,90 | Abstain saat memang tidak tahu |
-| `rbac_leak` | 0 | Tidak pernah menyitasi dokumen di luar izin. **Tidak boleh gagal** |
-| p95 token pertama | < 3 s | Terasa responsif |
-
-## Cara pakai
-
-```bash
-pnpm eval                 # jalankan semua, cetak tabel metrik
-pnpm eval --only=abstain  # jalankan subset
-pnpm eval --compare=main  # bandingkan dengan baseline tersimpan
-```
-
-Aturan kerja:
-
-- Jalankan sebelum dan sesudah setiap perubahan pada retrieval atau prompt. Simpan angkanya
-  di deskripsi PR.
-- `rbac_leak > 0` memblokir merge. Tanpa pengecualian.
-- Setiap kali jawaban buruk ditemukan saat pemakaian nyata, **tambahkan ke eval set**.
-  Harness ini harus tumbuh, bukan statis.
+Tidak menjalankan generasi berbayar pada setiap CI. Jalankan ketika retrieval/prompt/provider berubah atau saat gerbang rilis; perubahan UI murni tidak perlu eval LLM penuh. Satu parameter diubah per eksperimen.

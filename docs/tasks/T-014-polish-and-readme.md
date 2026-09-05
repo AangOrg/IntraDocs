@@ -1,35 +1,25 @@
-# T-014 — Pemolesan dan README
+# T-014: Pemeriksaan rilis dan README
 
-Hari 6 · orang B · perkiraan setengah hari
+Pemilik B; prasyarat seluruh fitur inti terintegrasi, T-013 menyelesaikan gerbang mutu.
 
-## Tujuan
+## Baca tambahan
 
-Membuat aplikasi bisa dicoba orang lain tanpa didampingi.
+Scope definisi selesai; ui-inventory.
 
-## Baca dulu
+## Lingkup
 
-`docs/ui-inventory.md`
+T-014a memperbaiki celah state/responsif yang terukur; T-014b menulis README dan menjalankan walkthrough penguji baru. Tidak menunda seluruh state UI sampai task ini.
 
-## Berkas yang disentuh
-
-`README.md` · `components/ui/*` · berkas halaman yang keadaannya masih kurang
-
-## Langkah
-
-1. Telusuri setiap halaman dan pastikan tiga keadaan ada: kosong, memuat, gagal. Halaman tanpa keadaan kosong terlihat rusak justru saat demo, karena demo sering menyentuh jalur yang datanya sedikit.
-2. Periksa semua halaman di lebar 375 px.
-3. Periksa halaman dokumen tidak ditemukan mengembalikan **404**, dan dokumen tanpa izin juga 404 — bukan 403.
-4. Tulis ulang `README.md`: apa ini, cara menjalankan lokal dalam lima langkah, cara seed, akun demo beserta role dan cakupannya, dan **skenario demo lima menit yang ditulis sebagai langkah-langkah**.
-5. Pastikan `pnpm seed` bisa dijalankan berulang dan hasilnya sama setiap kali.
-6. Tag commit terakhir yang diketahui baik sebelum demo.
+README mencakup setup lokal tanpa Docker, env per fitur, seed, lima akun aktif/Fajar nonaktif, batas demo sintetis, dan skenario lima menit. Jangan menaruh credential layanan nyata.
 
 ## Kriteria terima
 
-- Orang yang belum pernah melihat repo ini bisa menjalankannya di lokal hanya dari README.
-- Skenario demo bisa dijalankan dari awal sampai akhir tanpa menyentuh basis data secara manual.
-- Tidak ada halaman yang menampilkan tumpukan error mentah.
-- Tidak ada angka pengisi dari mockup yang tersisa di mana pun.
+- [ ] Penguji baru mengikuti README tanpa instruksi dari chat.
+- [ ] Demo meliputi reviewer sempit, viewer aktif, Fajar ditolak, pencarian fallback, sitasi/abstain/multi-turn/scope.
+- [ ] Semua halaman inti memiliki state/keyboard/375 px dan error tidak menampilkan stack/secret.
+- [ ] Dokumen serta riwayat tak berizin 404; aksi terlarang pada resource terlihat sesuai kontrak.
+- [ ] Seed ulang aman; upload md/txt dan publish diuji; failure embed tidak merusak versi lama.
+- [ ] Semua gerbang scope dan empat pemeriksaan CI lulus pada commit yang ditinjau.
+- [ ] Angka demo berasal dari data/eval, bukan mockup. Screenshot dan hasil pemeriksaan dilampirkan.
 
-## Di luar ruang lingkup
-
-Animasi, mode gelap, aksesibilitas menyeluruh, optimasi performa di luar target yang sudah ada.
+Tidak membuat tag, merge, atau menghapus branch tanpa permintaan eksplisit. Tidak membuka kembali fitur Fase 2 atas nama polish. STATUS diperbarui oleh chat eksekusi, bukan chat review.
