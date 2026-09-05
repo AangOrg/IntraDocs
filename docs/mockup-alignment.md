@@ -269,7 +269,7 @@ Matriks izin layar 8 punya tiga nilai, bukan dua, dan "terbatas" didefinisikan s
 
 ### 2. Percakapan berlanjut
 
-Layar 9 memperlihatkan pertanyaan lanjutan yang tidak bisa dipahami sendirianya. Rencana kita menyebut "RAG satu langkah" dan menaruh halaman chat di urutan potong nomor dua. Keduanya salah kalibrasi.
+Layar 9 memperlihatkan pertanyaan lanjutan yang tidak bisa dipahami sendirian. Rencana kita menyebut "RAG satu langkah" dan menaruh halaman chat di urutan potong nomor dua. Keduanya salah kalibrasi.
 
 **Biaya sekarang:** dua tabel kecil dan satu langkah penulisan ulang pertanyaan. **Biaya nanti:** pertanyaan lanjutan gagal di depan penonton demo. Keputusan di ADR-0010.
 
